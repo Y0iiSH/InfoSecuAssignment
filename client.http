@@ -1,0 +1,13 @@
+
+
+POST http://localhost:3000/registerAdmin
+Content-Type: application/json
+
+{
+    "username":"Admin2",
+    "password":"1234",
+    "name":"CEO Deen",
+    "email":"Deen@gmail.com",
+    "phoneNumber":"0123456789",
+    "role":"Admin"
+}
