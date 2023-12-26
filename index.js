@@ -28,6 +28,10 @@ async function run() {
     console.log(`Server listening at http://localSecurity:${port}`);
   });
 
+  app.get('/', (req, res) => {
+    res.send('Welcome to Visitor Management System');
+  });
+
   app.post('/registerAdmin', async (req, res) => {
     let data = req.body;
     res.send(await registerAdmin(client, data));
