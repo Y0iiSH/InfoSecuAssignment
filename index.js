@@ -55,6 +55,81 @@ async function run() {
     res.send('Welcome to Visitor Management System');
   });
 
+  
+
+  /**
+ * @swagger
+ * /registerAdmin:
+ *   post:
+ *     summary: Register a new admin
+ *     description: Register a new admin with required details
+ *     tags:
+ *       - Admin
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phoneNumber:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 description: Role of the admin (e.g., 'admin', 'superadmin', etc.)
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *               - role
+ *     responses:
+ *       '200':
+ *         description: Admin registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+  app.post('/registerAdmin', async (req, res) => {
+    let data = req.body;
+    res.send(await registerAdmin(client, data));
+  });
+
+  app.post('/loginAdmin', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
+
+  app.post('/loginSecurity', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
+
+  
+  app.post('/loginVisitor', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
+
+  app.post('/registerSecurity', verifyToken, async (req, res) => {
+    let data = req.user;
+    let mydata = req.body;
+    res.send(await register(client, data, mydata));
+  });
+
   /**
  * @swagger
  * /registerVisitor:
@@ -108,33 +183,6 @@ async function run() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-
-  app.post('/registerAdmin', async (req, res) => {
-    let data = req.body;
-    res.send(await registerAdmin(client, data));
-  });
-
-  app.post('/loginAdmin', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
-
-  app.post('/loginSecurity', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
-
-  app.post('/loginVisitor', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
-
-  app.post('/registerSecurity', verifyToken, async (req, res) => {
-    let data = req.user;
-    let mydata = req.body;
-    res.send(await register(client, data, mydata));
-  });
-
   app.post('/registerVisitor', verifyToken, async (req, res) => {
     let data = req.user;
     let mydata = req.body;
