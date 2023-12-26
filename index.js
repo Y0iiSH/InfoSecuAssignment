@@ -150,89 +150,7 @@ async function run() {
     res.send(await login(client, data));
   });
 
-  /**
- * @swagger
- * /loginSecurity:
- *   post:
- *     summary: Log in as security personnel
- *     description: Log in as security personnel with valid credentials
- *     tags:
- *       - Security
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Security personnel login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in security personnel
- *       '401':
- *         description: Unauthorized - Invalid credentials
- */
-  app.post('/loginSecurity', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
-
-  /**
- * @swagger
- * /loginVisitor:
- *   post:
- *     summary: Log in as a visitor
- *     description: Log in as a visitor with valid credentials
- *     tags:
- *       - Visitor
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Visitor login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in visitor
- *       '401':
- *         description: Unauthorized - Invalid credentials
- */
-  app.post('/loginVisitor', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
-
-  /**
+   /**
  * @swagger
  * /registerSecurity:
  *   post:
@@ -281,13 +199,54 @@ async function run() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-  app.post('/registerSecurity', verifyToken, async (req, res) => {
+   app.post('/registerSecurity', verifyToken, async (req, res) => {
     let data = req.user;
     let mydata = req.body;
     res.send(await register(client, data, mydata));
   });
 
   /**
+ * @swagger
+ * /loginSecurity:
+ *   post:
+ *     summary: Log in as security personnel
+ *     description: Log in as security personnel with valid credentials
+ *     tags:
+ *       - Security
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Security personnel login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in security personnel
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
+  app.post('/loginSecurity', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
+
+   /**
  * @swagger
  * /registerVisitor:
  *   post:
@@ -340,11 +299,56 @@ async function run() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-  app.post('/registerVisitor', verifyToken, async (req, res) => {
+   app.post('/registerVisitor', verifyToken, async (req, res) => {
     let data = req.user;
     let mydata = req.body;
     res.send(await register(client, data, mydata));
   });
+  
+  /**
+ * @swagger
+ * /loginVisitor:
+ *   post:
+ *     summary: Log in as a visitor
+ *     description: Log in as a visitor with valid credentials
+ *     tags:
+ *       - Visitor
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Visitor login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in visitor
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
+  app.post('/loginVisitor', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
+
+ 
+
+ 
 
   app.get('/readAdmin', verifyToken, async (req, res) => {
     let data = req.user;
