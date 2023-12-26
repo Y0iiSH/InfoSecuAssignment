@@ -85,7 +85,7 @@ async function run() {
  *                 type: string
  *               role:
  *                 type: string
- *                 description: Role of the admin (e.g., 'admin', 'superadmin', etc.)
+ *                 enum: [Admin]
  *             required:
  *               - username
  *               - password
