@@ -304,7 +304,7 @@ async function run() {
     let mydata = req.body;
     res.send(await register(client, data, mydata));
   });
-  
+
   /**
  * @swagger
  * /loginVisitor:
@@ -349,17 +349,128 @@ async function run() {
  
 
  
+  /**
+ * @swagger
+ * /readAdmin:
+ *   get:
+ *     summary: Read admin details
+ *     description: Get details of the logged-in admin
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Admin details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 username:
+ *                   type: string
+ *                   description: Username of the admin
+ *                 name:
+ *                   type: string
+ *                   description: Name of the admin
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   description: Email of the admin
+ *                 phoneNumber:
+ *                   type: string
+ *                   description: Phone number of the admin
+ *                 role:
+ *                   type: string
+ *                   description: Role of the admin
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
 
   app.get('/readAdmin', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await read(client, data));
   });
 
+  /**
+ * @swagger
+ * /readSecurity:
+ *   get:
+ *     summary: Read security personnel details
+ *     description: Get details of the logged-in security personnel
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Security personnel details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 username:
+ *                   type: string
+ *                   description: Username of the security personnel
+ *                 name:
+ *                   type: string
+ *                   description: Name of the security personnel
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   description: Email of the security personnel
+ *                 phoneNumber:
+ *                   type: string
+ *                   description: Phone number of the security personnel
+ *                 role:
+ *                   type: string
+ *                   description: Role of the security personnel
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
   app.get('/readSecurity', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await read(client, data));
   });
 
+  /**
+ * @swagger
+ * /readVisitor:
+ *   get:
+ *     summary: Read visitor details
+ *     description: Get details of the logged-in visitor
+ *     tags:
+ *       - Visitor
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Visitor details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 username:
+ *                   type: string
+ *                   description: Username of the visitor
+ *                 name:
+ *                   type: string
+ *                   description: Name of the visitor
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   description: Email of the visitor
+ *                 phoneNumber:
+ *                   type: string
+ *                   description: Phone number of the visitor
+ *                 role:
+ *                   type: string
+ *                   description: Role of the visitor
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
   app.get('/readVisitor', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await read(client, data));
