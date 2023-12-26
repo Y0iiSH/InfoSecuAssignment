@@ -24,7 +24,7 @@ const options = {
             }
         }
     },
-    amirul: ['./index.js'],
+    apis: ['./index.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
