@@ -4,8 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 const app = express();
-const port = 3000;
-const saltRounds = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 const uri = "mongodb+srv://amirulshafiq:sayahebat@assignment.dlfgoys.mongodb.net/";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
