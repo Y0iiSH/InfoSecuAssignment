@@ -151,7 +151,7 @@ async function run() {
   });
 
 
-  
+
    /**
  * @swagger
  * /registerSecurity:
@@ -564,7 +564,7 @@ async function run() {
 
 
 
-  /**
+ /**
  * @swagger
  * /checkIn:
  *   post:
@@ -581,16 +581,14 @@ async function run() {
  *           schema:
  *             type: object
  *             properties:
- *               // Add properties for check-in details here
- *               // Example:
  *               checkInLocation:
  *                 type: string
+ *                 description: Location where the visitor is checking in
  *               checkInTime:
  *                 type: string
  *                 format: date-time
+ *                 description: Time of check-in in ISO 8601 format
  *             required:
- *               // Add required properties for check-in details here
- *               // Example:
  *               - checkInLocation
  *               - checkInTime
  *     responses:
