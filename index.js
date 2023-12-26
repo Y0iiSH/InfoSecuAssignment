@@ -150,6 +150,8 @@ async function run() {
     res.send(await login(client, data));
   });
 
+
+  
    /**
  * @swagger
  * /registerSecurity:
@@ -205,6 +207,8 @@ async function run() {
     res.send(await register(client, data, mydata));
   });
 
+
+
   /**
  * @swagger
  * /loginSecurity:
@@ -245,6 +249,8 @@ async function run() {
     let data = req.body;
     res.send(await login(client, data));
   });
+
+
 
    /**
  * @swagger
@@ -305,6 +311,8 @@ async function run() {
     res.send(await register(client, data, mydata));
   });
 
+
+
   /**
  * @swagger
  * /loginVisitor:
@@ -348,7 +356,6 @@ async function run() {
 
  
 
- 
   /**
  * @swagger
  * /readAdmin:
@@ -392,6 +399,8 @@ async function run() {
     res.send(await read(client, data));
   });
 
+
+
   /**
  * @swagger
  * /readSecurity:
@@ -433,6 +442,8 @@ async function run() {
     let data = req.user;
     res.send(await read(client, data));
   });
+
+
 
   /**
  * @swagger
@@ -476,23 +487,160 @@ async function run() {
     res.send(await read(client, data));
   });
 
+
+
+  /**
+ * @swagger
+ * /updateVisitor:
+ *   patch:
+ *     summary: Update visitor details
+ *     description: Update details of the logged-in visitor
+ *     tags:
+ *       - Visitor
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               // Add properties for updating visitor details here
+ *               // Example:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phoneNumber:
+ *                 type: string
+ *             required:
+ *               // Add required properties for updating visitor details here
+ *               // Example:
+ *               - name
+ *     responses:
+ *       '200':
+ *         description: Visitor details updated successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
   app.patch('/updateVisitor', verifyToken, async (req, res) => {
     let data = req.user;
     let mydata = req.body;
     res.send(await update(client, data, mydata));
   });
 
+
+
+  /**
+ * @swagger
+ * /deleteVisitor:
+ *   delete:
+ *     summary: Delete visitor account
+ *     description: Delete the account of the logged-in visitor
+ *     tags:
+ *       - Visitor
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Visitor account deleted successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
   app.delete('/deleteVisitor', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await deleteUser(client, data));
   });
 
+
+
+  /**
+ * @swagger
+ * /checkIn:
+ *   post:
+ *     summary: Check-in as a visitor
+ *     description: Check-in as a visitor with valid credentials
+ *     tags:
+ *       - Visitor
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               // Add properties for check-in details here
+ *               // Example:
+ *               checkInLocation:
+ *                 type: string
+ *               checkInTime:
+ *                 type: string
+ *                 format: date-time
+ *             required:
+ *               // Add required properties for check-in details here
+ *               // Example:
+ *               - checkInLocation
+ *               - checkInTime
+ *     responses:
+ *       '200':
+ *         description: Visitor check-in successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
   app.post('/checkIn', verifyToken, async (req, res) => {
     let data = req.user;
     let mydata = req.body;
     res.send(await checkIn(client, data, mydata));
   });
 
+
+
+  /**
+ * @swagger
+ * /checkOut:
+ *   patch:
+ *     summary: Check-out as a visitor
+ *     description: Check-out as a visitor with valid credentials
+ *     tags:
+ *       - Visitor
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               // Add properties for check-out details here (if needed)
+ *             required:
+ *               // Add required properties for check-out details here (if needed)
+ *     responses:
+ *       '200':
+ *         description: Visitor check-out successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
   app.patch('/checkOut', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await checkOut(client, data));
