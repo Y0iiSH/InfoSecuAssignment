@@ -109,6 +109,42 @@ async function run() {
     res.send(await registerAdmin(client, data));
   });
 
+  /**
+ * @swagger
+ * /loginAdmin:
+ *   post:
+ *     summary: Log in as an admin
+ *     description: Log in as an admin with valid credentials
+ *     tags:
+ *       - Admin
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Admin login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in admin
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
   app.post('/loginAdmin', async (req, res) => {
     let data = req.body;
     res.send(await login(client, data));
