@@ -487,7 +487,7 @@ function generateUniquePassIdentifier() {
  *       '404':
  *         description: Visitor pass not found
  */
- app.get('/retrieveVisitorPass', async (req, res) => {
+app.get('/retrieveVisitorPass', async (req, res) => {
   const passIdentifier = req.query.passIdentifier;
 
   // Retrieve visitor pass information using the provided pass identifier
@@ -507,6 +507,17 @@ function generateUniquePassIdentifier() {
     res.status(404).send('Visitor pass not found');
   }
 });
+
+// Function to retrieve visitor pass information
+async function retrieveVisitorPass(client, passIdentifier) {
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Retrieve the visitor pass information based on the pass identifier
+  const passInfo = await recordsCollection.findOne({ passIdentifier });
+
+  return passInfo;
+}
+
 
 
 
