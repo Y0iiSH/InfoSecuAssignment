@@ -695,6 +695,78 @@ function generateUniquePassIdentifier() {
     res.send(await read(client, data));
   });
 
+  /**
+ * @swagger
+ * /checkoutVisitor:
+ *   post:
+ *     summary: Check out a visitor by pass ID
+ *     description: Check out a visitor by providing the pass ID (requires security personnel token)
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               passId:
+ *                 type: string
+ *             required:
+ *               - passId
+ *     responses:
+ *       '200':
+ *         description: Visitor checked out successfully
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '404':
+ *         description: Visitor not found
+ */
+app.post('/checkoutVisitor', verifySecurityToken, async (req, res) => {
+  const { passId } = req.body;
+  const result = await checkoutVisitorByPassId(client, passId);
+
+  if (result.visitorModifiedCount > 0) {
+    res.status(200).send('Visitor checked out successfully');
+  } else {
+    res.status(404).send('Visitor not found');
+  }
+});
+
+// Function to check out a visitor by pass ID
+async function checkoutVisitorByPassId(client, passId) {
+  const visitorResult = await client
+    .db('assignment')
+    .collection('Visitors')
+    .updateOne(
+      { passId, checkedOut: false },
+      { $set: { checkedOut: true } }
+    );
+
+  if (visitorResult.modifiedCount > 0) {
+    const visitorData = await client
+      .db('assignment')
+      .collection('Visitors')
+      .findOne({ passId });
+
+    // Insert a record into the 'Records' collection
+    await client
+      .db('assignment')
+      .collection('Records')
+      .insertOne({
+        visitor: visitorData,
+        checkoutTime: new Date(),
+      });
+  }
+
+  return {
+    visitorModifiedCount: visitorResult.modifiedCount,
+  };
+}
+
+
 
 
   /**
@@ -743,53 +815,7 @@ function generateUniquePassIdentifier() {
 
 
  
- /**
- * @swagger
- * /checkoutVisitor:
- *   post:
- *     summary: Check out a visitor by pass ID
- *     description: Check out a visitor by providing the pass ID (requires security personnel token)
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               passId:
- *                 type: string
- *             required:
- *               - passId
- *     responses:
- *       '200':
- *         description: Visitor checked out successfully
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '404':
- *         description: Visitor not found
- */
-app.post('/checkoutVisitor', verifySecurityToken, async (req, res) => {
-  const { passId } = req.body;
-  const result = await checkoutVisitorByPassId(client, passId);
-
-  if (result.modifiedCount > 0) {
-    res.status(200).send('Visitor checked out successfully');
-  } else {
-    res.status(404).send('Visitor not found');
-  }
-});
-
-// Function to check out a visitor by pass ID
-async function checkoutVisitorByPassId(client, passId) {
-  return await client
-    .db('assignment')
-    .collection('Visitors')
-    .updateOne({ passId, checkedOut: false }, { $set: { checkedOut: true } });
-}
+ 
 
 }
 
