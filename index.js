@@ -444,6 +444,16 @@ app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
   }
 });
 
+// Function to get security information by issuedBy (assuming it's the username)
+async function getSecurityInfo(client, issuedBy) {
+  const securityInfo = await client
+    .db('assignment')  // Ensure the correct database name is used
+    .collection('Security')
+    .findOne({ username: issuedBy });  // Assuming issuedBy corresponds to the security username
+
+  return securityInfo;
+}
+
 // Function to get security contact by visitor pass ID
 async function getSecurityContact(client, passIdentifier) {
   try {
