@@ -1049,7 +1049,6 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
 
 // Function to issue a visitor pass
 async function issueVisitorPass(client, securityData, visitorData) {
-  const usersCollection = client.db('assigment').collection('Users');
   const recordsCollection = client.db('assigment').collection('Records');
 
   // Check if the visitor already has a pass issued
@@ -1067,6 +1066,9 @@ async function issueVisitorPass(client, securityData, visitorData) {
   const recordData = {
     username: visitorData.icNumber,
     recordID: recordID,
+    name: visitorData.name,
+    company: visitorData.company,
+    vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
     checkInTime: currentCheckInTime
   };
