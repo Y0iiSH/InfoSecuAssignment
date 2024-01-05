@@ -399,6 +399,76 @@ async function deleteUser(client, icNumber, role) {
     res.send(await register(client, data, mydata));
   });
 
+  /**
+ * @swagger
+ * /getHostContact:
+ *   get:
+ *     summary: Get the contact number of the host from the given visitor pass
+ *     description: Get the contact number of the host associated with the provided visitor pass (requires admin token)
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: passId
+ *         required: true
+ *         description: Visitor pass identifier
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Host contact retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 hostName:
+ *                   type: string
+ *                 contactNumber:
+ *                   type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '404':
+ *         description: Visitor pass not found or host information not available
+ */
+app.get('/getHostContact', verifyAdminToken, async (req, res) => {
+  const { passId } = req.query;
+  const hostInfo = await getHostContact(client, passId);
+
+  if (hostInfo) {
+    res.status(200).json(hostInfo);
+  } else {
+    res.status(404).send('Visitor pass not found or host information not available');
+  }
+});
+
+// Function to get host contact by visitor pass ID
+async function getHostContact(client, passId) {
+  const visitorPass = await client
+    .db('assigment')
+    .collection('Records')
+    .findOne({ passIdentifier: passId });
+
+  if (visitorPass && visitorPass.hostName) {
+    // Assuming host information is stored in a 'Hosts' collection
+    const hostInfo = await client
+      .db('assigment')
+      .collection('Hosts')
+      .findOne({ name: visitorPass.hostName });
+
+    if (hostInfo && hostInfo.contactNumber) {
+      return {
+        hostName: hostInfo.name,
+        contactNumber: hostInfo.contactNumber,
+      };
+    }
+  }
+
+  return null;
+}
+
 
 
   /**
@@ -695,83 +765,7 @@ function generateUniquePassIdentifier() {
     res.send(await read(client, data));
   });
 
-  /**
- * @swagger
- * /checkoutVisitor:
- *   post:
- *     summary: Check out a visitor by pass identifier
- *     description: Check out a visitor by providing the pass identifier (requires security personnel token)
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               passIdentifier:
- *                 type: string
- *             required:
- *               - passIdentifier
- *     responses:
- *       '200':
- *         description: Visitor checked out successfully
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '404':
- *         description: Visitor not found
- */
-app.post('/checkoutVisitor', verifySecurityToken, async (req, res) => {
-  const { passIdentifier } = req.body;
-  const result = await checkoutVisitorByPassIdentifier(client, passIdentifier);
-
-  if (result.visitorModifiedCount > 0) {
-    res.status(200).send('Visitor checked out successfully');
-  } else {
-    res.status(404).send('Visitor not found');
-  }
-});
-
-// Function to check out a visitor by pass identifier
-async function checkoutVisitorByPassIdentifier(client, passIdentifier) {
-  const visitorResult = await client
-    .db('assignment')
-    .collection('Visitors')
-    .updateOne(
-      { passIdentifier, checkedOut: false },
-      { $set: { checkedOut: true } }
-    );
-
-  if (visitorResult.modifiedCount > 0) {
-    const visitorData = await client
-      .db('assignment')
-      .collection('Visitors')
-      .findOne({ passIdentifier });
-
-    const checkoutTime = new Date();
-
-    // Insert a record into the 'Records' collection with additional details
-    await client
-      .db('assignment')
-      .collection('Records')
-      .insertOne({
-        visitor: {
-          name: visitorData.name,
-          email: visitorData.email,
-          // Add any other details you want to include
-        },
-        passIdentifier,
-        checkoutTime,
-      });
-  }
-
-  return {
-    visitorModifiedCount: visitorResult.modifiedCount,
-  };
-}
+ 
  
 
 
