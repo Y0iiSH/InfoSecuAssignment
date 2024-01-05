@@ -401,10 +401,10 @@ async function deleteUser(client, icNumber, role) {
 
  /**
  * @swagger
- * /getHostContact:
+ * /getSecurityContact:
  *   get:
- *     summary: Get the contact number of the host from the given visitor pass
- *     description: Get the contact number of the host associated with the provided visitor pass (requires admin token)
+ *     summary: Get the contact number of the security from the given visitor pass
+ *     description: Get the contact number of the security personnel associated with the provided visitor pass (requires admin token)
  *     tags:
  *       - Admin
  *     security:
@@ -418,50 +418,50 @@ async function deleteUser(client, icNumber, role) {
  *           type: string
  *     responses:
  *       '200':
- *         description: Host contact retrieved successfully
+ *         description: Security contact retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 hostName:
+ *                 securityName:
  *                   type: string
  *                 phoneNumber:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
- *         description: Visitor pass not found or host information not available
+ *         description: Visitor pass not found or security information not available
  */
-app.get('/getHostContact', verifyAdminToken, async (req, res) => {
+app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
   const { passIdentifier } = req.query;
-  const hostInfo = await getHostContact(client, passIdentifier);
+  const securityInfo = await getSecurityContact(client, passIdentifier);
 
-  if (hostInfo) {
-    res.status(200).json(hostInfo);
+  if (securityInfo) {
+    res.status(200).json(securityInfo);
   } else {
-    res.status(404).send('Visitor pass not found or host information not available');
+    res.status(404).send('Visitor pass not found or security information not available');
   }
 });
 
-// Function to get host contact by visitor pass ID
-async function getHostContact(client, passIdentifier) {
+// Function to get security contact by visitor pass ID
+async function getSecurityContact(client, passIdentifier) {
   const visitorPass = await client
-    .db('assignment')
+    .db('assignment')  // Corrected the database name
     .collection('Records')
     .findOne({ passIdentifier });
 
-  if (visitorPass && visitorPass.hostName) {
-    // Assuming host information is stored in a 'Hosts' collection
-    const hostInfo = await client
-      .db('assignment')
-      .collection('Hosts')
-      .findOne({ name: visitorPass.hostName });
+  if (visitorPass && visitorPass.securityName) {
+    // Assuming security information is stored in a 'Security' collection
+    const securityInfo = await client
+      .db('assignment')  // Corrected the database name
+      .collection('Security')
+      .findOne({ name: visitorPass.securityName });
 
-    if (hostInfo && hostInfo.phoneNumber) {
+    if (securityInfo && securityInfo.phoneNumber) {
       return {
-        hostName: hostInfo.name,
-        phoneNumber: hostInfo.phoneNumber, // Change from contactNumber to phoneNumber
+        securityName: securityInfo.name,
+        phoneNumber: securityInfo.phoneNumber,
       };
     }
   }
