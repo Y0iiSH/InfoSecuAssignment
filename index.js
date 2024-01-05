@@ -150,6 +150,139 @@ async function run() {
     res.send(await login(client, data));
   });
 
+/**
+ * @swagger
+ * /readAllData:
+ *   get:
+ *     summary: Read all data from the database
+ *     description: Get all data from the database (requires admin token)
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: All data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 admins:
+ *                   type: array
+ *                   description: List of admin details
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                 securityPersonnel:
+ *                   type: array
+ *                   description: List of security personnel details
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       visitors:
+ *                         type: array
+ *                         description: List of visitors associated with the security personnel
+ *                         items:
+ *                           type: string
+ *                 visitors:
+ *                   type: array
+ *                   description: List of visitor details
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       records:
+ *                         type: array
+ *                         description: List of records associated with the visitor
+ *                         items:
+ *                           type: string
+ *                 records:
+ *                   type: array
+ *                   description: List of all records
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       recordID:
+ *                         type: string
+ *                       username:
+ *                         type: string
+ *                       purpose:
+ *                         type: string
+ *                       checkInTime:
+ *                         type: string
+ *                       checkOutTime:
+ *                         type: string
+ *     responses:
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.get('/readAllData', verifyAdminToken, async (req, res) => {
+  res.send(await readAllData(client));
+});
+
+// Function to read all data from the database
+async function readAllData(client) {
+  const admins = await client.db('assigment').collection('Admin').find().toArray();
+  const securityPersonnel = await client.db('assigment').collection('Security').find().toArray();
+  const visitors = await client.db('assigment').collection('Users').find({ role: 'Visitor' }).toArray();
+  const records = await client.db('assigment').collection('Records').find().toArray();
+
+  return { admins, securityPersonnel, visitors, records };
+}
+
+// Middleware to verify admin token
+function verifyAdminToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, 'dinpassword', function(err, decoded) {
+    if (err || decoded.role !== 'Admin') {
+      console.error(err);
+      return res.status(401).send('Invalid or insufficient admin token');
+    }
+
+    req.user = decoded;
+    next();
+  });
+}
 
 
    /**
