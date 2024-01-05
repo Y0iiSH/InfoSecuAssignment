@@ -317,22 +317,31 @@ function verifyAdminToken(req, res, next) {
  */
 app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
   const { icNumber, role } = req.query;
-  const result = await deleteUser(client, icNumber, role);
 
-  if (result.deletedCount > 0) {
-    res.status(200).send('User deleted successfully');
-  } else {
-    res.status(404).send('User not found');
+  try {
+    const result = await deleteUser(client, icNumber, role);
+
+    if (result.deletedCount > 0) {
+      res.status(200).send('User deleted successfully');
+    } else {
+      res.status(404).send('User not found');
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
 // Function to delete a user by IC number and role
 async function deleteUser(client, icNumber, role) {
+  const collectionName = role === 'visitor' ? 'Records' : 'Security';
+
   return await client
-    .db('assigment')
-    .collection('Users')
-    .deleteOne({ icNumber, role });
+    .db('assignment') // Corrected the typo in the database name
+    .collection(collectionName)
+    .deleteOne({ icNumber });
 }
+
 
 
    /**
