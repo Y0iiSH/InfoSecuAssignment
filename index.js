@@ -250,7 +250,7 @@ async function run() {
     res.send(await login(client, data));
   });
 
-  /**
+ /**
  * @swagger
  * /issueVisitorPass:
  *   post:
@@ -277,12 +277,15 @@ async function run() {
  *                 type: string
  *               purpose:
  *                 type: string
+ *               passIdentifier:
+ *                 type: string
  *             required:
  *               - name
  *               - icNumber
  *               - company
  *               - vehicleNumber
  *               - purpose
+ *               - passIdentifier
  *     responses:
  *       '200':
  *         description: Visitor pass issued successfully
@@ -302,6 +305,47 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
 
   res.send(result);
 });
+
+// Function to issue a visitor pass
+async function issueVisitorPass(client, securityData, visitorData) {
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Check if the visitor already has a pass issued
+  const existingRecord = await recordsCollection.findOne({ username: visitorData.icNumber, checkOutTime: null });
+
+  if (existingRecord) {
+    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
+  }
+
+  // Generate a unique recordID for the visitor pass
+  const recordID = generateUniqueRecordID();
+
+  const currentCheckInTime = new Date();
+
+  const recordData = {
+    username: visitorData.icNumber,
+    recordID: recordID,
+    name: visitorData.name,
+    company: visitorData.company,
+    vehicleNumber: visitorData.vehicleNumber,
+    purpose: visitorData.purpose,
+    passIdentifier: visitorData.passIdentifier, // Added passIdentifier
+    checkInTime: currentCheckInTime
+  };
+
+  // Insert the visitor record into the database
+  await recordsCollection.insertOne(recordData);
+
+  return `Visitor pass issued successfully. RecordID: ${recordID}`;
+}
+
+// Function to generate a unique recordID
+function generateUniqueRecordID() {
+  // Implement your logic to generate a unique recordID (e.g., using timestamps, random numbers, etc.)
+  // For simplicity, let's use the current timestamp in milliseconds
+  return Date.now().toString();
+}
+
 
 // Function to issue a visitor pass
 async function issueVisitorPass(client, securityData, visitorData) {
