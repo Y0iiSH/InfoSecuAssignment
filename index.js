@@ -613,7 +613,7 @@ async function run() {
   /**
  * @swagger
  * /checkOut:
- *   patch:
+ *   post:
  *     summary: Check-out as a visitor
  *     description: Check-out as a visitor with valid credentials
  *     tags:
@@ -640,7 +640,7 @@ async function run() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-  app.patch('/checkOut', verifyToken, async (req, res) => {
+  app.post('/checkOut', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await checkOut(client, data));
   });
