@@ -426,7 +426,7 @@ async function deleteUser(client, icNumber, role) {
  *               properties:
  *                 hostName:
  *                   type: string
- *                 contactNumber:
+ *                 phoneNumber:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
@@ -458,10 +458,10 @@ async function getHostContact(client, passIdentifier) {
       .collection('Hosts')
       .findOne({ name: visitorPass.hostName });
 
-    if (hostInfo && hostInfo.contactNumber) {
+    if (hostInfo && hostInfo.phoneNumber) {
       return {
         hostName: hostInfo.name,
-        contactNumber: hostInfo.contactNumber,
+        phoneNumber: hostInfo.phoneNumber, // Change from contactNumber to phoneNumber
       };
     }
   }
