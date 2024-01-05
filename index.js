@@ -251,103 +251,12 @@ async function run() {
   });
 
 /**
- * @swagger
- * /issueVisitorPass:
- *   post:
- *     summary: Issue a visitor pass
- *     description: Issue a visitor pass for a visitor without creating a visitor account
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               icNumber:
- *                 type: string
- *               company:
- *                 type: string
- *               vehicleNumber:
- *                 type: string
- *               purpose:
- *                 type: string
- *             required:
- *               - name
- *               - icNumber
- *               - company
- *               - vehicleNumber
- *               - purpose
- *     responses:
- *       '200':
- *         description: Visitor pass issued successfully
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-app.post('/issueVisitorPass', verifyToken, async (req, res) => {
-  let securityData = req.user;
-  let visitorData = req.body;
-
-  // Create a visitor record without creating a visitor account
-  const result = await issueVisitorPass(client, securityData, visitorData);
-
-  res.send(result);
-});
-
-// Function to issue a visitor pass
-async function issueVisitorPass(client, securityData, visitorData) {
-  const recordsCollection = client.db('assigment').collection('Records');
-
-  // Check if the visitor already has a pass issued
-  const existingRecord = await recordsCollection.findOne({ username: visitorData.icNumber, checkOutTime: null });
-
-  if (existingRecord) {
-    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
-  }
-
-  // Generate a unique recordID for the visitor pass
-  const recordID = generateUniqueRecordID();
-
-  const currentCheckInTime = new Date();
-
-  const recordData = {
-    username: visitorData.icNumber,
-    recordID: recordID,
-    name: visitorData.name,
-    company: visitorData.company,
-    vehicleNumber: visitorData.vehicleNumber,
-    purpose: visitorData.purpose,
-    checkInTime: currentCheckInTime
-  };
-
-  // Insert the visitor record into the database
-  await recordsCollection.insertOne(recordData);
-
-  return `Visitor pass issued successfully. RecordID: ${recordID}`;
-}
-
-// Function to generate a unique recordID
-function generateUniqueRecordID() {
-  // Implement your logic to generate a unique recordID (e.g., using timestamps, random numbers, etc.)
-  // For simplicity, let's use the current timestamp in milliseconds
-  return Date.now().toString();
-}
-
 /**
  * @swagger
  * /issueVisitorPass:
  *   post:
  *     summary: Issue a visitor pass
- *     description: Issue a visitor pass with only the pass identifier
+ *     description: Issue a visitor pass using a generated pass identifier
  *     tags:
  *       - Security
  *     security:
@@ -377,7 +286,7 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
   let securityData = req.user;
   let passData = req.body;
 
-  // Issue a visitor pass and store it in the Records collection
+  // Issue a visitor pass using the provided pass identifier
   const result = await issueVisitorPass(client, securityData, passData);
 
   res.send(result);
@@ -406,6 +315,49 @@ async function issueVisitorPass(client, securityData, passData) {
   await recordsCollection.insertOne(recordData);
 
   return `Visitor pass issued successfully. Pass Identifier: ${passData.passIdentifier}`;
+}
+/**
+ * @swagger
+ * /generatePassIdentifier:
+ *   get:
+ *     summary: Generate a unique visitor pass identifier
+ *     description: Generate a unique pass identifier to be used for issuing visitor passes
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Pass identifier generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 passIdentifier:
+ *                   type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.get('/generatePassIdentifier', verifyToken, async (req, res) => {
+  const passIdentifier = generateUniquePassIdentifier();
+  res.json({ passIdentifier });
+});
+
+// Function to generate a unique pass identifier
+function generateUniquePassIdentifier() {
+  // Implement your logic to generate a unique pass identifier, e.g., using a UUID library
+  const passIdentifier = generateUUID();
+  return passIdentifier;
+}
+
+// Function to generate a UUID (you can use a library like uuid)
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0,
+      v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
    /**
@@ -646,51 +598,7 @@ async function issueVisitorPass(client, securityData, passData) {
 
 
  
-  /**
- * @swagger
- * /updateVisitor:
- *   patch:
- *     summary: Update visitor details
- *     description: Update details of the logged-in visitor
- *     tags:
- *       - Visitor
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               // Add properties for updating visitor details here
- *               // Example:
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phoneNumber:
- *                 type: string
- *             required:
- *               // Add required properties for updating visitor details here
- *               // Example:
- *               - name
- *     responses:
- *       '200':
- *         description: Visitor details updated successfully
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-  app.patch('/updateVisitor', verifyToken, async (req, res) => {
-    let data = req.user;
-    let mydata = req.body;
-    res.send(await update(client, data, mydata));
-  });
+ 
 
 
 
@@ -721,51 +629,7 @@ async function issueVisitorPass(client, securityData, passData) {
 
 
 
- /**
- * @swagger
- * /checkIn:
- *   post:
- *     summary: Check-in as a visitor
- *     description: Check-in as a visitor with valid credentials
- *     tags:
- *       - Visitor
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               checkInLocation:
- *                 type: string
- *                 description: Location where the visitor is checking in
- *               checkInTime:
- *                 type: string
- *                 format: date-time
- *                 description: Time of check-in in ISO 8601 format
- *             required:
- *               - checkInLocation
- *               - checkInTime
- *     responses:
- *       '200':
- *         description: Visitor check-in successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-  app.post('/checkIn', verifyToken, async (req, res) => {
-    let data = req.user;
-    let mydata = req.body;
-    res.send(await checkIn(client, data, mydata));
-  });
-
-
-
+ 
   /**
  * @swagger
  * /checkOut:
