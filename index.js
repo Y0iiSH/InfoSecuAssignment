@@ -335,6 +335,47 @@ async function issueVisitorPass(client, securityData, visitorData) {
   // Insert the visitor record into the database
   await recordsCollection.insertOne(recordData);
 
+  return `Visitor pass issued successfully by ${securityData.username}. Pass Identifier: ${passIdentifier}`;
+}
+
+// Function to generate a unique passIdentifier
+function generateUniquePassIdentifier() {
+  // Implement your logic to generate a unique passIdentifier (e.g., using timestamps, random numbers, etc.)
+  // For simplicity, let's use the current timestamp in milliseconds
+  return Date.now().toString();
+}
+
+
+// Function to issue a visitor pass
+async function issueVisitorPass(client, securityData, visitorData) {
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Check if the visitor already has a pass issued
+  const existingRecord = await recordsCollection.findOne({ icNumber: visitorData.icNumber, checkOutTime: null });
+
+  if (existingRecord) {
+    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
+  }
+
+  // Generate a unique passIdentifier for the visitor pass
+  const passIdentifier = generateUniquePassIdentifier();
+
+  const currentCheckInTime = new Date();
+
+  const recordData = {
+    icNumber: visitorData.icNumber,
+    passIdentifier: passIdentifier,
+    name: visitorData.name,
+    company: visitorData.company,
+    vehicleNumber: visitorData.vehicleNumber,
+    purpose: visitorData.purpose,
+    checkInTime: currentCheckInTime,
+    issuedBy: securityData.username // Add the issuedBy information
+  };
+
+  // Insert the visitor record into the database
+  await recordsCollection.insertOne(recordData);
+
   return `Visitor pass issued successfully. Pass Identifier: ${passIdentifier}`;
 }
 
@@ -347,107 +388,7 @@ function generateUniquePassIdentifier() {
 
 
 
-   /**
- * @swagger
- * /registerVisitor:
- *   post:
- *     summary: Register a new visitor
- *     description: Register a new visitor with required details
- *     tags:
- *       - Visitor
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               icNumber:
- *                 type: string
- *               company:
- *                 type: string
- *               vehicleNumber:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phoneNumber:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *               - name
- *               - icNumber
- *               - company
- *               - vehicleNumber
- *               - email
- *               - phoneNumber
- *     responses:
- *       '200':
- *         description: Visitor registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-   app.post('/registerVisitor', verifyToken, async (req, res) => {
-    let data = req.user;
-    let mydata = req.body;
-    res.send(await register(client, data, mydata));
-  });
-
-
-
-  /**
- * @swagger
- * /loginVisitor:
- *   post:
- *     summary: Log in as a visitor
- *     description: Log in as a visitor with valid credentials
- *     tags:
- *       - Visitor
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Visitor login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in visitor
- *       '401':
- *         description: Unauthorized - Invalid credentials
- */
-  app.post('/loginVisitor', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
+ 
 
  /**
  * @swagger
@@ -653,39 +594,6 @@ async function retrieveVisitorPass(client, passIdentifier) {
     let data = req.user;
     res.send(await read(client, data));
   });
-
-
-
- 
- 
-
-
-
-  /**
- * @swagger
- * /deleteVisitor:
- *   delete:
- *     summary: Delete visitor account
- *     description: Delete the account of the logged-in visitor
- *     tags:
- *       - Visitor
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Visitor account deleted successfully
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-  app.delete('/deleteVisitor', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await deleteUser(client, data));
-  });
-
 
 
  
