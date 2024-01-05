@@ -251,6 +251,76 @@ async function run() {
   });
 
 /**
+/**
+ * @swagger
+ * /retrieveVisitorPass:
+ *   get:
+ *     summary: Retrieve visitor pass information
+ *     description: Retrieve detailed information for a visitor pass using the IC number
+ *     tags:
+ *       - Visitor
+ *     parameters:
+ *       - in: query
+ *         name: icNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: IC number of the visitor
+ *     responses:
+ *       '200':
+ *         description: Visitor pass information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 icNumber:
+ *                   type: string
+ *                 passIdentifier:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 company:
+ *                   type: string
+ *                 vehicleNumber:
+ *                   type: string
+ *                 purpose:
+ *                   type: string
+ *                 checkInTime:
+ *                   type: string
+ *       '404':
+ *         description: Visitor pass not found
+ */
+app.get('/retrieveVisitorPass', async (req, res) => {
+  const icNumber = req.query.icNumber;
+
+  // Retrieve visitor pass information using the provided IC number
+  const passInfo = await retrieveVisitorPassByICNumber(client, icNumber);
+
+  if (passInfo) {
+    res.json({
+      icNumber: passInfo.icNumber,
+      passIdentifier: passInfo.passIdentifier,
+      name: passInfo.name,
+      company: passInfo.company,
+      vehicleNumber: passInfo.vehicleNumber,
+      purpose: passInfo.purpose,
+      checkInTime: passInfo.checkInTime.toISOString() // Adjust the format as needed
+    });
+  } else {
+    res.status(404).send('Visitor pass not found');
+  }
+});
+
+// Function to retrieve visitor pass information by IC number
+async function retrieveVisitorPassByICNumber(client, icNumber) {
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Retrieve the visitor pass information based on the IC number
+  const passInfo = await recordsCollection.findOne({ icNumber });
+
+  return passInfo;
+}
 
 /**
  * @swagger
@@ -392,7 +462,7 @@ function generateUniquePassIdentifier() {
 
  /**
  * @swagger
- * /retrieveVisitorPass:
+ * /getVisitorDetail:
  *   get:
  *     summary: Retrieve visitor pass information
  *     description: Retrieve detailed information for a visitor pass using the pass identifier
