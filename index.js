@@ -500,7 +500,7 @@ function generateUniquePassIdentifier() {
  *       '404':
  *         description: Visitor pass not found
  */
-app.get('/retrieveVisitorPass', async (req, res) => {
+app.get('/getVisitorDetail', async (req, res) => {
   const passIdentifier = req.query.passIdentifier;
 
   // Retrieve visitor pass information using the provided pass identifier
@@ -530,6 +530,7 @@ async function retrieveVisitorPass(client, passIdentifier) {
 
   return passInfo;
 }
+
 
 
 
