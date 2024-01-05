@@ -316,14 +316,14 @@ async function issueVisitorPass(client, securityData, visitorData) {
     return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
   }
 
-  // Generate a unique recordID for the visitor pass
-  const recordID = generateUniqueRecordID();
+  // Generate a unique passIdentifier for the visitor pass
+  const passIdentifier = generateUniquePassIdentifier();
 
   const currentCheckInTime = new Date();
 
   const recordData = {
     icNumber: visitorData.icNumber,
-    recordID: recordID,
+    passIdentifier: passIdentifier,
     name: visitorData.name,
     company: visitorData.company,
     vehicleNumber: visitorData.vehicleNumber,
@@ -334,15 +334,16 @@ async function issueVisitorPass(client, securityData, visitorData) {
   // Insert the visitor record into the database
   await recordsCollection.insertOne(recordData);
 
-  return `Visitor pass issued successfully. RecordID: ${recordID}`;
+  return `Visitor pass issued successfully. Pass Identifier: ${passIdentifier}`;
 }
 
-// Function to generate a unique recordID
-function generateUniqueRecordID() {
-  // Implement your logic to generate a unique recordID (e.g., using timestamps, random numbers, etc.)
+// Function to generate a unique passIdentifier
+function generateUniquePassIdentifier() {
+  // Implement your logic to generate a unique passIdentifier (e.g., using timestamps, random numbers, etc.)
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
+
 
 
    /**
