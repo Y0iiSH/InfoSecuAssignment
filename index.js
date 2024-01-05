@@ -479,14 +479,15 @@ function generateUniqueRecordID() {
  *       '404':
  *         description: Visitor pass not found
  */
-app.get('/retrieveVisitorPass', async (req, res) => {
+ app.get('/retrieveVisitorPass', async (req, res) => {
   const passIdentifier = req.query.passIdentifier;
 
   // Retrieve visitor pass information using the provided pass identifier
   const passInfo = await retrieveVisitorPass(client, passIdentifier);
 
   if (passInfo) {
-    res.json(passInfo);
+    const { passIdentifier, securityUsername, checkInTime } = passInfo;
+    res.json({ passIdentifier, securityUsername, checkInTime });
   } else {
     res.status(404).send('Visitor pass not found');
   }
