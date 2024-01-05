@@ -255,10 +255,10 @@ app.get('/readAllData', verifyAdminToken, async (req, res) => {
 
 // Function to read all data from the database
 async function readAllData(client) {
-  const admins = await client.db('assigment').collection('Admin').find().toArray();
-  const securityPersonnel = await client.db('assigment').collection('Security').find().toArray();
-  const visitors = await client.db('assigment').collection('Users').find({ role: 'Visitor' }).toArray();
-  const records = await client.db('assigment').collection('Records').find().toArray();
+  const admins = await client.db('assignment').collection('Admin').find().toArray();
+  const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
+  const visitors = await client.db('assignment').collection('Users').find({ role: 'Visitor' }).toArray();
+  const records = await client.db('assignment').collection('Records').find().toArray();
 
   return { admins, securityPersonnel, visitors, records };
 }
@@ -506,7 +506,7 @@ app.get('/retrieveVisitorPass', async (req, res) => {
 
 // Function to retrieve visitor pass information by IC number
 async function retrieveVisitorPassByICNumber(client, icNumber) {
-  const recordsCollection = client.db('assigment').collection('Records');
+  const recordsCollection = client.db('assignment').collection('Records');
 
   // Retrieve the visitor pass information based on the IC number
   const passInfo = await recordsCollection.findOne({ icNumber });
@@ -569,7 +569,7 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
 
 // Function to issue a visitor pass
 async function issueVisitorPass(client, securityData, visitorData) {
-  const recordsCollection = client.db('assigment').collection('Records');
+  const recordsCollection = client.db('assignment').collection('Records');
 
   // Check if the visitor already has a pass issued
   const existingRecord = await recordsCollection.findOne({ icNumber: visitorData.icNumber, checkOutTime: null });
@@ -610,7 +610,7 @@ function generateUniquePassIdentifier() {
 
 // Function to issue a visitor pass
 async function issueVisitorPass(client, securityData, visitorData) {
-  const recordsCollection = client.db('assigment').collection('Records');
+  const recordsCollection = client.db('assignment').collection('Records');
 
   // Check if the visitor already has a pass issued
   const existingRecord = await recordsCollection.findOne({ icNumber: visitorData.icNumber, checkOutTime: null });
@@ -713,7 +713,7 @@ app.get('/getVisitorDetail', async (req, res) => {
 
 // Function to retrieve visitor pass information
 async function retrieveVisitorPass(client, passIdentifier) {
-  const recordsCollection = client.db('assigment').collection('Records');
+  const recordsCollection = client.db('assignment').collection('Records');
 
   // Retrieve the visitor pass information based on the pass identifier
   const passInfo = await recordsCollection.findOne({ passIdentifier });
@@ -866,11 +866,11 @@ function generateToken(userProfile){
 async function registerAdmin(client, data) {
   data.password = await encryptPassword(data.password);
   
-  const existingUser = await client.db("assigment").collection("Admin").findOne({ username: data.username });
+  const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
   if (existingUser) {
     return 'Username already registered';
   } else {
-    const result = await client.db("assigment").collection("Admin").insertOne(data);
+    const result = await client.db("assignment").collection("Admin").insertOne(data);
     return 'Admin registered';
   }
 }
@@ -878,9 +878,9 @@ async function registerAdmin(client, data) {
 
 //Function to login
 async function login(client, data) {
-  const adminCollection = client.db("assigment").collection("Admin");
-  const securityCollection = client.db("assigment").collection("Security");
-  const usersCollection = client.db("assigment").collection("Users");
+  const adminCollection = client.db("assignment").collection("Admin");
+  const securityCollection = client.db("assignment").collection("Security");
+  const usersCollection = client.db("assignment").collection("Users");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -931,9 +931,9 @@ async function decryptPassword(password, compare) {
 
 //Function to register security and visitor
 async function register(client, data, mydata) {
-  const adminCollection = client.db("assigment").collection("Admin");
-  const securityCollection = client.db("assigment").collection("Security");
-  const usersCollection = client.db("assigment").collection("Users");
+  const adminCollection = client.db("assignment").collection("Admin");
+  const securityCollection = client.db("assignment").collection("Security");
+  const usersCollection = client.db("assignment").collection("Users");
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
@@ -989,33 +989,33 @@ async function register(client, data, mydata) {
 //Function to read data
 async function read(client, data) {
   if (data.role == 'Admin') {
-    const Admins = await client.db('assigment').collection('Admin').find({ role: 'Admin' }).next();
-    const Securitys = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
-    const Visitors = await client.db('assigment').collection('Users').find({ role: 'Visitor' }).toArray();
-    const Records = await client.db('assigment').collection('Records').find().toArray();
+    const Admins = await client.db('assignment').collection('Admin').find({ role: 'Admin' }).next();
+    const Securitys = await client.db('assignment').collection('Security').find({ role: 'Security' }).toArray();
+    const Visitors = await client.db('assignment').collection('Users').find({ role: 'Visitor' }).toArray();
+    const Records = await client.db('assignment').collection('Records').find().toArray();
 
     return { Admins, Securitys, Visitors, Records };
   }
 
   if (data.role == 'Security') {
-    const Security = await client.db('assigment').collection('Security').findOne({ username: data.username });
+    const Security = await client.db('assignment').collection('Security').findOne({ username: data.username });
     if (!Security) {
       return 'User not found';
     }
 
-    const Visitors = await client.db('assigment').collection('Users').find({ Security: data.username }).toArray();
-    const Records = await client.db('assigment').collection('Records').find().toArray();
+    const Visitors = await client.db('assignment').collection('Users').find({ Security: data.username }).toArray();
+    const Records = await client.db('assignment').collection('Records').find().toArray();
 
     return { Security, Visitors, Records };
   }
 
   if (data.role == 'Visitor') {
-    const Visitor = await client.db('assigment').collection('Users').findOne({ username: data.username });
+    const Visitor = await client.db('assignment').collection('Users').findOne({ username: data.username });
     if (!Visitor) {
       return 'User not found';
     }
 
-    const Records = await client.db('assigment').collection('Records').find({ recordID: { $in: Visitor.records } }).toArray();
+    const Records = await client.db('assignment').collection('Records').find({ recordID: { $in: Visitor.records } }).toArray();
 
     return { Visitor, Records };
   }
@@ -1024,7 +1024,7 @@ async function read(client, data) {
 
 //Function to update data
 async function update(client, data, mydata) {
-  const usersCollection = client.db("assigment").collection("Users");
+  const usersCollection = client.db("assignment").collection("Users");
 
   if (mydata.password) {
     mydata.password = await encryptPassword(mydata.password);
@@ -1045,9 +1045,9 @@ async function update(client, data, mydata) {
 
 //Function to delete data
 async function deleteUser(client, data) {
-  const usersCollection = client.db("assigment").collection("Users");
-  const recordsCollection = client.db("assigment").collection("Records");
-  const securityCollection = client.db("assigment").collection("Security");
+  const usersCollection = client.db("assignment").collection("Users");
+  const recordsCollection = client.db("assignment").collection("Records");
+  const securityCollection = client.db("assignment").collection("Security");
 
   // Delete user document
   const deleteResult = await usersCollection.deleteOne({ username: data.username });
@@ -1077,8 +1077,8 @@ async function deleteUser(client, data) {
 
 //Function to check in
 async function checkIn(client, data, mydata) {
-  const usersCollection = client.db('assigment').collection('Users');
-  const recordsCollection = client.db('assigment').collection('Records');
+  const usersCollection = client.db('assignment').collection('Users');
+  const recordsCollection = client.db('assignment').collection('Records');
 
   const currentUser = await usersCollection.findOne({ username: data.username });
 
@@ -1126,8 +1126,8 @@ async function checkIn(client, data, mydata) {
 
 //Function to check out
 async function checkOut(client, data) {
-  const usersCollection = client.db('assigment').collection('Users');
-  const recordsCollection = client.db('assigment').collection('Records');
+  const usersCollection = client.db('assignment').collection('Users');
+  const recordsCollection = client.db('assignment').collection('Records');
 
   const currentUser = await usersCollection.findOne({ username: data.username });
 
