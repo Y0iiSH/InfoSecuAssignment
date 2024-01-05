@@ -446,35 +446,29 @@ app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
 
 // Function to get security contact by visitor pass ID
 async function getSecurityContact(client, passIdentifier) {
-  try {
-    const visitorPass = await client
-      .db('assignment')
-      .collection('Records')
-      .findOne({ passIdentifier });
+  const visitorPass = await client
+    .db('assigment')
+    .collection('Records')
+    .findOne({ passIdentifier });
 
-    if (visitorPass && visitorPass.name) {
-      const securityInfo = await client
-        .db('assignment')
-        .collection('Security')
-        .findOne({ name: visitorPass.name });
+  if (visitorPass && visitorPass.name) {
+    // Assuming security information is stored in a 'Security' collection
+    const securityInfo = await client
+      .db('assigment')
+      .collection('Security')
+      .findOne({ name: visitorPass.name });
 
-      if (securityInfo && securityInfo.phoneNumber) {
-        return {
-          securityName: securityInfo.name,
-          phoneNumber: securityInfo.phoneNumber,
-        };
-      } else {
-        console.error('Security information not found or missing phoneNumber field.');
-      }
-    } else {
-      console.error('Visitor pass not found or missing issuedBy field.');
+    if (securityInfo && securityInfo.phoneNumber) {
+      return {
+        securityName: securityInfo.name,
+        phoneNumber: securityInfo.phoneNumber,
+      };
     }
-  } catch (error) {
-    console.error('Error fetching security information:', error);
   }
 
   return null;
 }
+
 
 
 
