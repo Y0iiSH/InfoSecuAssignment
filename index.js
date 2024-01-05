@@ -277,15 +277,12 @@ async function run() {
  *                 type: string
  *               purpose:
  *                 type: string
- *               passIdentifier:
- *                 type: string
  *             required:
  *               - name
  *               - icNumber
  *               - company
  *               - vehicleNumber
  *               - purpose
- *               - passIdentifier
  *     responses:
  *       '200':
  *         description: Visitor pass issued successfully
@@ -329,7 +326,6 @@ async function issueVisitorPass(client, securityData, visitorData) {
     company: visitorData.company,
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
-    passIdentifier: visitorData.passIdentifier, // Added passIdentifier
     checkInTime: currentCheckInTime
   };
 
@@ -345,7 +341,6 @@ function generateUniqueRecordID() {
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
-
 
 
 
