@@ -310,7 +310,7 @@ async function issueVisitorPass(client, securityData, visitorData) {
   const recordsCollection = client.db('assigment').collection('Records');
 
   // Check if the visitor already has a pass issued
-  const existingRecord = await recordsCollection.findOne({ username: visitorData.icNumber, checkOutTime: null });
+  const existingRecord = await recordsCollection.findOne({ icNumber: visitorData.icNumber, checkOutTime: null });
 
   if (existingRecord) {
     return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
@@ -328,7 +328,8 @@ async function issueVisitorPass(client, securityData, visitorData) {
     company: visitorData.company,
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
-    checkInTime: currentCheckInTime
+    checkInTime: currentCheckInTime,
+    issuedBy: securityData.username // Add the issuedBy information
   };
 
   // Insert the visitor record into the database
@@ -343,6 +344,7 @@ function generateUniquePassIdentifier() {
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
+
 
 
    /**
