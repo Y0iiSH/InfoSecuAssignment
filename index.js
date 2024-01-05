@@ -699,8 +699,8 @@ function generateUniquePassIdentifier() {
  * @swagger
  * /checkoutVisitor:
  *   post:
- *     summary: Check out a visitor by pass ID
- *     description: Check out a visitor by providing the pass ID (requires security personnel token)
+ *     summary: Check out a visitor by pass identifier
+ *     description: Check out a visitor by providing the pass identifier (requires security personnel token)
  *     tags:
  *       - Security
  *     security:
@@ -712,10 +712,10 @@ function generateUniquePassIdentifier() {
  *           schema:
  *             type: object
  *             properties:
- *               passId:
+ *               passIdentifier:
  *                 type: string
  *             required:
- *               - passId
+ *               - passIdentifier
  *     responses:
  *       '200':
  *         description: Visitor checked out successfully
@@ -725,8 +725,8 @@ function generateUniquePassIdentifier() {
  *         description: Visitor not found
  */
 app.post('/checkoutVisitor', verifySecurityToken, async (req, res) => {
-  const { passId } = req.body;
-  const result = await checkoutVisitorByPassId(client, passId);
+  const { passIdentifier } = req.body;
+  const result = await checkoutVisitorByPassIdentifier(client, passIdentifier);
 
   if (result.visitorModifiedCount > 0) {
     res.status(200).send('Visitor checked out successfully');
@@ -735,13 +735,13 @@ app.post('/checkoutVisitor', verifySecurityToken, async (req, res) => {
   }
 });
 
-// Function to check out a visitor by pass ID
-async function checkoutVisitorByPassId(client, passId) {
+// Function to check out a visitor by pass identifier
+async function checkoutVisitorByPassIdentifier(client, passIdentifier) {
   const visitorResult = await client
     .db('assignment')
     .collection('Visitors')
     .updateOne(
-      { passId, checkedOut: false },
+      { passIdentifier, checkedOut: false },
       { $set: { checkedOut: true } }
     );
 
@@ -749,15 +749,22 @@ async function checkoutVisitorByPassId(client, passId) {
     const visitorData = await client
       .db('assignment')
       .collection('Visitors')
-      .findOne({ passId });
+      .findOne({ passIdentifier });
 
-    // Insert a record into the 'Records' collection
+    const checkoutTime = new Date();
+
+    // Insert a record into the 'Records' collection with additional details
     await client
       .db('assignment')
       .collection('Records')
       .insertOne({
-        visitor: visitorData,
-        checkoutTime: new Date(),
+        visitor: {
+          name: visitorData.name,
+          email: visitorData.email,
+          // Add any other details you want to include
+        },
+        passIdentifier,
+        checkoutTime,
       });
   }
 
@@ -765,7 +772,7 @@ async function checkoutVisitorByPassId(client, passId) {
     visitorModifiedCount: visitorResult.modifiedCount,
   };
 }
-
+ 
 
 
 
