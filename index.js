@@ -404,7 +404,7 @@ async function deleteUser(client, icNumber, role) {
  * /getSecurityContact:
  *   get:
  *     summary: Get the contact number of the security from the given visitor pass
- *     description: Get the contact number of the security personnel associated with the provided visitor pass (requires admin token)
+ *     description: Get the contact number of the security personnel who issued the provided visitor pass (requires admin token)
  *     tags:
  *       - Admin
  *     security:
@@ -426,7 +426,7 @@ async function deleteUser(client, icNumber, role) {
  *               properties:
  *                 securityName:
  *                   type: string
- *                 phoneNumber:
+ *                 contactNumber:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
@@ -446,28 +446,36 @@ app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
 
 // Function to get security contact by visitor pass ID
 async function getSecurityContact(client, passIdentifier) {
-  const visitorPass = await client
-    .db('assigment')
-    .collection('Records')
-    .findOne({ passIdentifier });
+  try {
+    const visitorPass = await client
+      .db('assignment')
+      .collection('Records')
+      .findOne({ passIdentifier });
 
-  if (visitorPass && visitorPass.name) {
-    // Assuming security information is stored in a 'Security' collection
-    const securityInfo = await client
-      .db('assigment')
-      .collection('Security')
-      .findOne({ name: visitorPass.name });
+    if (visitorPass && visitorPass.issuedBy) {
+      const securityInfo = await client
+        .db('assignment')
+        .collection('Security')
+        .findOne({ name: visitorPass.issuedBy });
 
-    if (securityInfo && securityInfo.phoneNumber) {
-      return {
-        securityName: securityInfo.name,
-        phoneNumber: securityInfo.phoneNumber,
-      };
+      if (securityInfo && securityInfo.phoneNumber) {
+        return {
+          securityName: securityInfo.name,
+          contactNumber: securityInfo.phoneNumber,
+        };
+      } else {
+        console.error('Security information not found or missing phoneNumber field.');
+      }
+    } else {
+      console.error('Visitor pass not found or missing issuedBy field.');
     }
+  } catch (error) {
+    console.error('Error fetching security information:', error);
   }
 
   return null;
 }
+
 
 
 
