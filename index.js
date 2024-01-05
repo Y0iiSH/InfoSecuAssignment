@@ -451,7 +451,7 @@ async function getSecurityContact(client, passIdentifier) {
     .collection('Records')
     .findOne({ passIdentifier });
 
-  if (visitorPass && visitorPass.securityName) {
+  if (visitorPass && visitorPass.name) {
     // Assuming security information is stored in a 'Security' collection
     const securityInfo = await client
       .db('assignment')  // Corrected the database name
