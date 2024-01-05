@@ -447,14 +447,14 @@ app.get('/getHostContact', verifyAdminToken, async (req, res) => {
 // Function to get host contact by visitor pass ID
 async function getHostContact(client, passIdentifier) {
   const visitorPass = await client
-    .db('assigment')
+    .db('assignment')
     .collection('Records')
     .findOne({ passIdentifier });
 
   if (visitorPass && visitorPass.hostName) {
     // Assuming host information is stored in a 'Hosts' collection
     const hostInfo = await client
-      .db('assigment')
+      .db('assignment')
       .collection('Hosts')
       .findOne({ name: visitorPass.hostName });
 
