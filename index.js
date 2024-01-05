@@ -277,15 +277,12 @@ async function run() {
  *                 type: string
  *               purpose:
  *                 type: string
- *               passIdentifier:
- *                 type: string
  *             required:
  *               - name
  *               - icNumber
  *               - company
  *               - vehicleNumber
  *               - purpose
- *               - passIdentifier
  *     responses:
  *       '200':
  *         description: Visitor pass issued successfully
@@ -300,7 +297,7 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
   let securityData = req.user;
   let visitorData = req.body;
 
-  // Issue a visitor pass and store it in the user's record
+  // Create a visitor record without creating a visitor account
   const result = await issueVisitorPass(client, securityData, visitorData);
 
   res.send(result);
@@ -308,12 +305,12 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
 
 // Function to issue a visitor pass
 async function issueVisitorPass(client, securityData, visitorData) {
-  const usersCollection = client.db('assigment').collection('Users');
+  const recordsCollection = client.db('assigment').collection('Records');
 
   // Check if the visitor already has a pass issued
-  const existingUser = await usersCollection.findOne({ username: visitorData.icNumber });
+  const existingRecord = await recordsCollection.findOne({ username: visitorData.icNumber, checkOutTime: null });
 
-  if (existingUser && existingUser.currentCheckIn) {
+  if (existingRecord) {
     return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
   }
 
@@ -329,18 +326,11 @@ async function issueVisitorPass(client, securityData, visitorData) {
     company: visitorData.company,
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
-    passIdentifier: visitorData.passIdentifier,
     checkInTime: currentCheckInTime
   };
 
-  // Insert the visitor pass into the user's records
-  await usersCollection.updateOne(
-    { username: visitorData.icNumber },
-    {
-      $set: { currentCheckIn: recordID },
-      $push: { records: recordData }
-    }
-  );
+  // Insert the visitor record into the database
+  await recordsCollection.insertOne(recordData);
 
   return `Visitor pass issued successfully. RecordID: ${recordID}`;
 }
@@ -350,6 +340,72 @@ function generateUniqueRecordID() {
   // Implement your logic to generate a unique recordID (e.g., using timestamps, random numbers, etc.)
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
+}
+
+/**
+ * @swagger
+ * /issueVisitorPass:
+ *   post:
+ *     summary: Issue a visitor pass
+ *     description: Issue a visitor pass with only the pass identifier
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               passIdentifier:
+ *                 type: string
+ *             required:
+ *               - passIdentifier
+ *     responses:
+ *       '200':
+ *         description: Visitor pass issued successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/issueVisitorPass', verifyToken, async (req, res) => {
+  let securityData = req.user;
+  let passData = req.body;
+
+  // Issue a visitor pass and store it in the Records collection
+  const result = await issueVisitorPass(client, securityData, passData);
+
+  res.send(result);
+});
+
+// Function to issue a visitor pass
+async function issueVisitorPass(client, securityData, passData) {
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Check if the pass identifier is already in use
+  const existingRecord = await recordsCollection.findOne({ passIdentifier: passData.passIdentifier });
+
+  if (existingRecord) {
+    return 'Pass identifier is already in use. Please choose another pass identifier.';
+  }
+
+  const currentCheckInTime = new Date();
+
+  const recordData = {
+    passIdentifier: passData.passIdentifier,
+    securityUsername: securityData.username,
+    checkInTime: currentCheckInTime
+  };
+
+  // Insert the visitor pass into the Records collection
+  await recordsCollection.insertOne(recordData);
+
+  return `Visitor pass issued successfully. Pass Identifier: ${passData.passIdentifier}`;
 }
 
    /**
