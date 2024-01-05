@@ -251,12 +251,13 @@ async function run() {
   });
 
 /**
+
 /**
  * @swagger
  * /issueVisitorPass:
  *   post:
  *     summary: Issue a visitor pass
- *     description: Issue a visitor pass using a generated pass identifier
+ *     description: Authenticated security can issue a visitor pass for a registered visitor
  *     tags:
  *       - Security
  *     security:
@@ -268,10 +269,15 @@ async function run() {
  *           schema:
  *             type: object
  *             properties:
- *               passIdentifier:
+ *               visitorUsername:
  *                 type: string
+ *                 description: Username of the visitor for whom the pass is being issued
+ *               passValidityHours:
+ *                 type: number
+ *                 description: Validity duration of the pass in hours
  *             required:
- *               - passIdentifier
+ *               - visitorUsername
+ *               - passValidityHours
  *     responses:
  *       '200':
  *         description: Visitor pass issued successfully
@@ -284,80 +290,61 @@ async function run() {
  */
 app.post('/issueVisitorPass', verifyToken, async (req, res) => {
   let securityData = req.user;
-  let passData = req.body;
-
-  // Issue a visitor pass using the provided pass identifier
-  const result = await issueVisitorPass(client, securityData, passData);
-
-  res.send(result);
+  let requestData = req.body;
+  res.send(await issueVisitorPass(client, securityData, requestData));
 });
 
 // Function to issue a visitor pass
-async function issueVisitorPass(client, securityData, passData) {
+async function issueVisitorPass(client, securityData, requestData) {
+  const usersCollection = client.db('assigment').collection('Users');
   const recordsCollection = client.db('assigment').collection('Records');
 
-  // Check if the pass identifier is already in use
-  const existingRecord = await recordsCollection.findOne({ passIdentifier: passData.passIdentifier });
-
-  if (existingRecord) {
-    return 'Pass identifier is already in use. Please choose another pass identifier.';
+  // Check if the security personnel has the authority to issue passes
+  if (securityData.role !== 'Security') {
+    return 'Only security personnel can issue visitor passes.';
   }
 
-  const currentCheckInTime = new Date();
+  // Find the visitor in the database
+  const visitor = await usersCollection.findOne({ username: requestData.visitorUsername, role: 'Visitor' });
 
-  const recordData = {
-    passIdentifier: passData.passIdentifier,
+  if (!visitor) {
+    return 'Visitor not found';
+  }
+
+  // Generate a unique pass ID
+  const passID = generatePassID();
+
+  // Calculate pass expiration time
+  const currentDateTime = new Date();
+  const passExpirationTime = new Date(currentDateTime.getTime() + requestData.passValidityHours * 60 * 60 * 1000);
+
+  // Create a pass record
+  const passRecord = {
+    passID: passID,
+    visitorUsername: visitor.username,
     securityUsername: securityData.username,
-    checkInTime: currentCheckInTime
+    issueTime: currentDateTime,
+    expirationTime: passExpirationTime,
   };
 
-  // Insert the visitor pass into the Records collection
-  await recordsCollection.insertOne(recordData);
+  // Update the visitor's records with the issued pass
+  await usersCollection.updateOne(
+    { username: visitor.username },
+    { $push: { records: passID } }
+  );
 
-  return `Visitor pass issued successfully. Pass Identifier: ${passData.passIdentifier}`;
-}
-/**
- * @swagger
- * /generatePassIdentifier:
- *   get:
- *     summary: Generate a unique visitor pass identifier
- *     description: Generate a unique pass identifier to be used for issuing visitor passes
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Pass identifier generated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 passIdentifier:
- *                   type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-app.get('/generatePassIdentifier', verifyToken, async (req, res) => {
-  const passIdentifier = generateUniquePassIdentifier();
-  res.json({ passIdentifier });
-});
+  // Insert the pass record into the records collection
+  await recordsCollection.insertOne(passRecord);
 
-// Function to generate a unique pass identifier
-function generateUniquePassIdentifier() {
-  // Implement your logic to generate a unique pass identifier, e.g., using a UUID library
-  const passIdentifier = generateUUID();
-  return passIdentifier;
+  return `Visitor pass issued successfully. Pass ID: ${passID}`;
 }
 
-// Function to generate a UUID (you can use a library like uuid)
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0,
-      v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+// Function to generate a unique pass ID
+function generatePassID() {
+  // Generate a unique ID based on your requirements (e.g., using a library like uuid)
+  // For simplicity, let's assume a basic implementation using a timestamp
+  const timestamp = new Date().getTime();
+  return `PASS-${timestamp}`;
 }
 
    /**
