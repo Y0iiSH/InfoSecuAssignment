@@ -452,11 +452,11 @@ async function getSecurityContact(client, passIdentifier) {
       .collection('Records')
       .findOne({ passIdentifier });
 
-    if (visitorPass && visitorPass.issuedBy) {
+    if (visitorPass && visitorPass.name) {
       const securityInfo = await client
         .db('assignment')
         .collection('Security')
-        .findOne({ name: visitorPass.issuedBy });
+        .findOne({ name: visitorPass.name });
 
       if (securityInfo && securityInfo.phoneNumber) {
         return {
