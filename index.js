@@ -447,7 +447,61 @@ function generateUniqueRecordID() {
     res.send(await login(client, data));
   });
 
- 
+ /**
+ * @swagger
+ * /retrieveVisitorPass:
+ *   get:
+ *     summary: Retrieve visitor pass information
+ *     description: Retrieve information for a visitor pass using the pass identifier
+ *     tags:
+ *       - Visitor
+ *     parameters:
+ *       - in: query
+ *         name: passIdentifier
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Pass identifier for the visitor pass
+ *     responses:
+ *       '200':
+ *         description: Visitor pass information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 passIdentifier:
+ *                   type: string
+ *                 securityUsername:
+ *                   type: string
+ *                 checkInTime:
+ *                   type: string
+ *       '404':
+ *         description: Visitor pass not found
+ */
+app.get('/retrieveVisitorPass', async (req, res) => {
+  const passIdentifier = req.query.passIdentifier;
+
+  // Retrieve visitor pass information using the provided pass identifier
+  const passInfo = await retrieveVisitorPass(client, passIdentifier);
+
+  if (passInfo) {
+    res.json(passInfo);
+  } else {
+    res.status(404).send('Visitor pass not found');
+  }
+});
+
+// Function to retrieve visitor pass information
+async function retrieveVisitorPass(client, passIdentifier) {
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Retrieve the visitor pass information based on the pass identifier
+  const passInfo = await recordsCollection.findOne({ passIdentifier });
+
+  return passInfo;
+}
+
 
   /**
  * @swagger
