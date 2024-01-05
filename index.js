@@ -448,7 +448,7 @@ app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
 async function getSecurityInfo(client, issuedBy) {
   const securityInfo = await client
     .db('assignment')  // Ensure the correct database name is used
-    .collection('Security')
+    .collection('Records')
     .findOne({ username: issuedBy });  // Assuming issuedBy corresponds to the security username
 
   return securityInfo;
