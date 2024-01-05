@@ -345,7 +345,6 @@ function generateUniquePassIdentifier() {
 }
 
 
-
    /**
  * @swagger
  * /registerVisitor:
@@ -453,7 +452,7 @@ function generateUniquePassIdentifier() {
  * /retrieveVisitorPass:
  *   get:
  *     summary: Retrieve visitor pass information
- *     description: Retrieve information for a visitor pass using the pass identifier
+ *     description: Retrieve detailed information for a visitor pass using the pass identifier
  *     tags:
  *       - Visitor
  *     parameters:
@@ -471,9 +470,17 @@ function generateUniquePassIdentifier() {
  *             schema:
  *               type: object
  *               properties:
+ *                 icNumber:
+ *                   type: string
  *                 passIdentifier:
  *                   type: string
- *                 securityUsername:
+ *                 name:
+ *                   type: string
+ *                 company:
+ *                   type: string
+ *                 vehicleNumber:
+ *                   type: string
+ *                 purpose:
  *                   type: string
  *                 checkInTime:
  *                   type: string
@@ -487,22 +494,20 @@ function generateUniquePassIdentifier() {
   const passInfo = await retrieveVisitorPass(client, passIdentifier);
 
   if (passInfo) {
-    const { passIdentifier, securityUsername, checkInTime } = passInfo;
-    res.json({ passIdentifier, securityUsername, checkInTime });
+    res.json({
+      icNumber: passInfo.icNumber,
+      passIdentifier: passInfo.passIdentifier,
+      name: passInfo.name,
+      company: passInfo.company,
+      vehicleNumber: passInfo.vehicleNumber,
+      purpose: passInfo.purpose,
+      checkInTime: passInfo.checkInTime.toISOString() // Adjust the format as needed
+    });
   } else {
     res.status(404).send('Visitor pass not found');
   }
 });
 
-// Function to retrieve visitor pass information
-async function retrieveVisitorPass(client, passIdentifier) {
-  const recordsCollection = client.db('assigment').collection('Records');
-
-  // Retrieve the visitor pass information based on the pass identifier
-  const passInfo = await recordsCollection.findOne({ passIdentifier });
-
-  return passInfo;
-}
 
 
   /**
