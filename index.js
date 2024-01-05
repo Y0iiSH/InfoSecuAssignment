@@ -994,5 +994,99 @@ function verifyToken(req, res, next) {
 }
 
 
+/**
+ * @swagger
+ * /issueVisitorPass:
+ *   post:
+ *     summary: Issue a visitor pass
+ *     description: Issue a visitor pass for a visitor without creating a visitor account
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               icNumber:
+ *                 type: string
+ *               company:
+ *                 type: string
+ *               vehicleNumber:
+ *                 type: string
+ *               purpose:
+ *                 type: string
+ *             required:
+ *               - name
+ *               - icNumber
+ *               - company
+ *               - vehicleNumber
+ *               - purpose
+ *     responses:
+ *       '200':
+ *         description: Visitor pass issued successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/issueVisitorPass', verifyToken, async (req, res) => {
+  let securityData = req.user;
+  let visitorData = req.body;
+
+  // Create a visitor record without creating a visitor account
+  const result = await issueVisitorPass(client, securityData, visitorData);
+
+  res.send(result);
+});
+
+// Function to issue a visitor pass
+async function issueVisitorPass(client, securityData, visitorData) {
+  const usersCollection = client.db('assigment').collection('Users');
+  const recordsCollection = client.db('assigment').collection('Records');
+
+  // Check if the visitor already has a pass issued
+  const existingRecord = await recordsCollection.findOne({ username: visitorData.icNumber, checkOutTime: null });
+
+  if (existingRecord) {
+    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
+  }
+
+  // Generate a unique recordID for the visitor pass
+  const recordID = generateUniqueRecordID();
+
+  const currentCheckInTime = new Date();
+
+  const recordData = {
+    username: visitorData.icNumber,
+    recordID: recordID,
+    purpose: visitorData.purpose,
+    checkInTime: currentCheckInTime
+  };
+
+  // Insert the visitor record into the database
+  await recordsCollection.insertOne(recordData);
+
+  return `Visitor pass issued successfully. RecordID: ${recordID}`;
+}
+
+// Function to generate a unique recordID
+function generateUniqueRecordID() {
+  // Implement your logic to generate a unique recordID (e.g., using timestamps, random numbers, etc.)
+  // For simplicity, let's use the current timestamp in milliseconds
+  return Date.now().toString();
+}
+
+
+
+
+
 
 
