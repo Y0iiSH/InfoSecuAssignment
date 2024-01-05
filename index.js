@@ -284,6 +284,56 @@ function verifyAdminToken(req, res, next) {
   });
 }
 
+/**
+ * @swagger
+ * /deleteUser:
+ *   delete:
+ *     summary: Delete a visitor or security personnel by IC number and role
+ *     description: Delete a user (visitor or security personnel) by providing IC number and role (requires admin token)
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: icNumber
+ *         required: true
+ *         description: IC number of the user to be deleted
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: role
+ *         required: true
+ *         description: Role of the user to be deleted (Visitor or Security)
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: User deleted successfully
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '404':
+ *         description: User not found
+ */
+app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
+  const { icNumber, role } = req.query;
+  const result = await deleteUser(client, icNumber, role);
+
+  if (result.deletedCount > 0) {
+    res.status(200).send('User deleted successfully');
+  } else {
+    res.status(404).send('User not found');
+  }
+});
+
+// Function to delete a user by IC number and role
+async function deleteUser(client, icNumber, role) {
+  return await client
+    .db('assigment')
+    .collection('Users')
+    .deleteOne({ icNumber, role });
+}
+
 
    /**
  * @swagger
@@ -591,8 +641,6 @@ function generateUniquePassIdentifier() {
 
 
 
- 
-
  /**
  * @swagger
  * /getVisitorDetail:
@@ -756,48 +804,6 @@ async function retrieveVisitorPass(client, passIdentifier) {
   });
 
 
-
-  /**
- * @swagger
- * /readVisitor:
- *   get:
- *     summary: Read visitor details
- *     description: Get details of the logged-in visitor
- *     tags:
- *       - Visitor
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Visitor details retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 username:
- *                   type: string
- *                   description: Username of the visitor
- *                 name:
- *                   type: string
- *                   description: Name of the visitor
- *                 email:
- *                   type: string
- *                   format: email
- *                   description: Email of the visitor
- *                 phoneNumber:
- *                   type: string
- *                   description: Phone number of the visitor
- *                 role:
- *                   type: string
- *                   description: Role of the visitor
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-  app.get('/readVisitor', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
-  });
 
 
  
