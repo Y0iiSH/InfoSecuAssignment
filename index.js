@@ -650,79 +650,6 @@ function generateUniquePassIdentifier() {
 
 
 
- /**
- * @swagger
- * /getVisitorDetail:
- *   get:
- *     summary: Retrieve visitor pass information
- *     description: Retrieve detailed information for a visitor pass using the pass identifier
- *     tags:
- *       - Visitor
- *     parameters:
- *       - in: query
- *         name: passIdentifier
- *         required: true
- *         schema:
- *           type: string
- *         description: Pass identifier for the visitor pass
- *     responses:
- *       '200':
- *         description: Visitor pass information retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 icNumber:
- *                   type: string
- *                 passIdentifier:
- *                   type: string
- *                 name:
- *                   type: string
- *                 company:
- *                   type: string
- *                 vehicleNumber:
- *                   type: string
- *                 purpose:
- *                   type: string
- *                 checkInTime:
- *                   type: string
- *       '404':
- *         description: Visitor pass not found
- */
-app.get('/getVisitorDetail', async (req, res) => {
-  const passIdentifier = req.query.passIdentifier;
-
-  // Retrieve visitor pass information using the provided pass identifier
-  const passInfo = await retrieveVisitorPass(client, passIdentifier);
-
-  if (passInfo) {
-    res.json({
-      icNumber: passInfo.icNumber,
-      passIdentifier: passInfo.passIdentifier,
-      name: passInfo.name,
-      company: passInfo.company,
-      vehicleNumber: passInfo.vehicleNumber,
-      purpose: passInfo.purpose,
-      checkInTime: passInfo.checkInTime.toISOString() // Adjust the format as needed
-    });
-  } else {
-    res.status(404).send('Visitor pass not found');
-  }
-});
-
-// Function to retrieve visitor pass information
-async function retrieveVisitorPass(client, passIdentifier) {
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  // Retrieve the visitor pass information based on the pass identifier
-  const passInfo = await recordsCollection.findOne({ passIdentifier });
-
-  return passInfo;
-}
-
-
-
 
 
   /**
@@ -816,14 +743,14 @@ async function retrieveVisitorPass(client, passIdentifier) {
 
 
  
-  /**
+ /**
  * @swagger
- * /checkOut:
+ * /checkoutVisitor:
  *   post:
- *     summary: Check-out as a visitor
- *     description: Check-out as a visitor with valid credentials
+ *     summary: Check out a visitor by pass ID
+ *     description: Check out a visitor by providing the pass ID (requires security personnel token)
  *     tags:
- *       - Visitor
+ *       - Security
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -833,23 +760,37 @@ async function retrieveVisitorPass(client, passIdentifier) {
  *           schema:
  *             type: object
  *             properties:
- *               // Add properties for check-out details here (if needed)
+ *               passId:
+ *                 type: string
  *             required:
- *               // Add required properties for check-out details here (if needed)
+ *               - passId
  *     responses:
  *       '200':
- *         description: Visitor check-out successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
+ *         description: Visitor checked out successfully
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
+ *       '404':
+ *         description: Visitor not found
  */
-  app.post('/checkOut', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await checkOut(client, data));
-  });
+app.post('/checkoutVisitor', verifySecurityToken, async (req, res) => {
+  const { passId } = req.body;
+  const result = await checkoutVisitorByPassId(client, passId);
+
+  if (result.modifiedCount > 0) {
+    res.status(200).send('Visitor checked out successfully');
+  } else {
+    res.status(404).send('Visitor not found');
+  }
+});
+
+// Function to check out a visitor by pass ID
+async function checkoutVisitorByPassId(client, passId) {
+  return await client
+    .db('assignment')
+    .collection('Visitors')
+    .updateOne({ passId, checkedOut: false }, { $set: { checkedOut: true } });
+}
+
 }
 
 run().catch(console.error);
