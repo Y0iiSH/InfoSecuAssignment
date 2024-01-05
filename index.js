@@ -453,6 +453,7 @@ async function getSecurityContact(client, passIdentifier) {
       .findOne({ passIdentifier });
 
     if (visitorPass && visitorPass.issuedBy) {
+      // Assuming the security personnel's name is stored in the `issuedBy` field
       const securityInfo = await client
         .db('assignment')
         .collection('Security')
