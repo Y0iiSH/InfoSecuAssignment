@@ -257,7 +257,7 @@ async function run() {
  * /issueVisitorPass:
  *   post:
  *     summary: Issue a visitor pass
- *     description: Authenticated security can issue a visitor pass for a registered visitor
+ *     description: Issue a visitor pass for a visitor without creating a visitor account
  *     tags:
  *       - Security
  *     security:
@@ -269,15 +269,22 @@ async function run() {
  *           schema:
  *             type: object
  *             properties:
- *               visitorUsername:
+ *               name:
  *                 type: string
- *                 description: Username of the visitor for whom the pass is being issued
- *               passValidityHours:
- *                 type: number
- *                 description: Validity duration of the pass in hours
+ *               icNumber:
+ *                 type: string
+ *               company:
+ *                 type: string
+ *               vehicleNumber:
+ *                 type: string
+ *               purpose:
+ *                 type: string
  *             required:
- *               - visitorUsername
- *               - passValidityHours
+ *               - name
+ *               - icNumber
+ *               - company
+ *               - vehicleNumber
+ *               - purpose
  *     responses:
  *       '200':
  *         description: Visitor pass issued successfully
@@ -290,62 +297,53 @@ async function run() {
  */
 app.post('/issueVisitorPass', verifyToken, async (req, res) => {
   let securityData = req.user;
-  let requestData = req.body;
-  res.send(await issueVisitorPass(client, securityData, requestData));
+  let visitorData = req.body;
+
+  // Create a visitor record without creating a visitor account
+  const result = await issueVisitorPass(client, securityData, visitorData);
+
+  res.send(result);
 });
 
 // Function to issue a visitor pass
-async function issueVisitorPass(client, securityData, requestData) {
-  const usersCollection = client.db('assigment').collection('Users');
+async function issueVisitorPass(client, securityData, visitorData) {
   const recordsCollection = client.db('assigment').collection('Records');
 
-  // Check if the security personnel has the authority to issue passes
-  if (securityData.role !== 'Security') {
-    return 'Only security personnel can issue visitor passes.';
+  // Check if the visitor already has a pass issued
+  const existingRecord = await recordsCollection.findOne({ username: visitorData.icNumber, checkOutTime: null });
+
+  if (existingRecord) {
+    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
   }
 
-  // Find the visitor in the database
-  const visitor = await usersCollection.findOne({ username: requestData.visitorUsername, role: 'Visitor' });
+  // Generate a unique recordID for the visitor pass
+  const recordID = generateUniqueRecordID();
 
-  if (!visitor) {
-    return 'Visitor not found';
-  }
+  const currentCheckInTime = new Date();
 
-  // Generate a unique pass ID
-  const passID = generatePassID();
-
-  // Calculate pass expiration time
-  const currentDateTime = new Date();
-  const passExpirationTime = new Date(currentDateTime.getTime() + requestData.passValidityHours * 60 * 60 * 1000);
-
-  // Create a pass record
-  const passRecord = {
-    passID: passID,
-    visitorUsername: visitor.username,
-    securityUsername: securityData.username,
-    issueTime: currentDateTime,
-    expirationTime: passExpirationTime,
+  const recordData = {
+    username: visitorData.icNumber,
+    recordID: recordID,
+    name: visitorData.name,
+    company: visitorData.company,
+    vehicleNumber: visitorData.vehicleNumber,
+    purpose: visitorData.purpose,
+    checkInTime: currentCheckInTime
   };
 
-  // Update the visitor's records with the issued pass
-  await usersCollection.updateOne(
-    { username: visitor.username },
-    { $push: { records: passID } }
-  );
+  // Insert the visitor record into the database
+  await recordsCollection.insertOne(recordData);
 
-  // Insert the pass record into the records collection
-  await recordsCollection.insertOne(passRecord);
-
-  return `Visitor pass issued successfully. Pass ID: ${passID}`;
+  return `Visitor pass issued successfully. RecordID: ${recordID}`;
 }
 
-// Function to generate a unique pass ID
-function generatePassID() {
-  // Generate a unique ID based on your requirements (e.g., using a library like uuid)
-  // For simplicity, let's assume a basic implementation using a timestamp
-  const timestamp = new Date().getTime();
-  return `PASS-${timestamp}`;
+// Function to generate a unique recordID
+function generateUniqueRecordID() {
+  // Implement your logic to generate a unique recordID (e.g., using timestamps, random numbers, etc.)
+  // For simplicity, let's use the current timestamp in milliseconds
+  return Date.now().toString();
 }
+
 
    /**
  * @swagger
