@@ -399,7 +399,7 @@ async function deleteUser(client, icNumber, role) {
     res.send(await register(client, data, mydata));
   });
 
-  /**
+ /**
  * @swagger
  * /getHostContact:
  *   get:
@@ -411,7 +411,7 @@ async function deleteUser(client, icNumber, role) {
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: passId
+ *         name: passIdentifier
  *         required: true
  *         description: Visitor pass identifier
  *         schema:
@@ -434,8 +434,8 @@ async function deleteUser(client, icNumber, role) {
  *         description: Visitor pass not found or host information not available
  */
 app.get('/getHostContact', verifyAdminToken, async (req, res) => {
-  const { passId } = req.query;
-  const hostInfo = await getHostContact(client, passId);
+  const { passIdentifier } = req.query;
+  const hostInfo = await getHostContact(client, passIdentifier);
 
   if (hostInfo) {
     res.status(200).json(hostInfo);
@@ -445,11 +445,11 @@ app.get('/getHostContact', verifyAdminToken, async (req, res) => {
 });
 
 // Function to get host contact by visitor pass ID
-async function getHostContact(client, passId) {
+async function getHostContact(client, passIdentifier) {
   const visitorPass = await client
     .db('assigment')
     .collection('Records')
-    .findOne({ passIdentifier: passId });
+    .findOne({ passIdentifier });
 
   if (visitorPass && visitorPass.hostName) {
     // Assuming host information is stored in a 'Hosts' collection
