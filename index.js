@@ -322,7 +322,7 @@ async function issueVisitorPass(client, securityData, visitorData) {
   const currentCheckInTime = new Date();
 
   const recordData = {
-    username: visitorData.icNumber,
+    icNumber: visitorData.icNumber,
     recordID: recordID,
     name: visitorData.name,
     company: visitorData.company,
