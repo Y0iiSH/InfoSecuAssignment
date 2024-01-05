@@ -30,7 +30,7 @@ const options = {
 const swaggerSpec = swaggerJsdoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const saltRounds = 10;
-const uri = "mongodb+srv://amirulshafiq:sayahebat@assignment.dlfgoys.mongodb.net/";
+const uri = "mongodb+srv://amirulidham:sayahebat@cluster0.j5tgroe.mongodb.net/";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
