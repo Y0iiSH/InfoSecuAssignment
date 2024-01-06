@@ -932,13 +932,24 @@ async function createHost(client, hostData) {
 app.post('/loginHost', async (req, res) => {
   try {
     const { username, password } = req.body;
+    
+    // Find the host by username
     const host = await findHostByUsername(client, username);
 
-    if (host && await bcrypt.compare(password, host.password)) {
-      // Generate a token upon successful login
-      const token = jwt.sign({ username: host.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
-      res.status(200).json({ token });
+    if (host) {
+      // Compare the provided password with the hashed password in the database
+      const passwordMatch = await bcrypt.compare(password, host.password);
+
+      if (passwordMatch) {
+        // Generate a token upon successful login
+        const token = jwt.sign({ username: host.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
+        res.status(200).json({ token });
+      } else {
+        // Password does not match
+        res.status(401).send('Invalid credentials');
+      }
     } else {
+      // No host found with the provided username
       res.status(401).send('Invalid credentials');
     }
   } catch (error) {
