@@ -257,7 +257,6 @@ app.get('/readAllData', verifyAdminToken, async (req, res) => {
 async function readAllData(client) {
   const admins = await client.db('assignment').collection('Admin').find().toArray();
   const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
-  const visitors = await client.db('assignment').collection('Users').find({ role: 'Visitor' }).toArray();
   const records = await client.db('assignment').collection('Records').find().toArray();
 
   return { admins, securityPersonnel, visitors, records };
@@ -407,6 +406,23 @@ app.post('/registerSecurity', verifyToken, async (req, res) => {
   res.send(await register(client, data, mydata));
 });
 
+async function register(client, data, mydata) {
+  const result = await client
+    .db('assignment')
+    .collection('Security')
+    .insertOne({
+      username: mydata.username,
+      password: mydata.password,
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      role: mydata.role,
+    });
+
+  return 'Security personnel registration successful';
+}
+
 
  /**
  * @swagger
@@ -496,9 +512,6 @@ async function getSecurityContact(client, passIdentifier) {
 
   return null;
 }
-
-
-
 
 
 
@@ -932,11 +945,11 @@ async function decryptPassword(password, compare) {
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const usersCollection = client.db("assignment").collection("Users");
+  
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  const tempUser = await usersCollection.findOne({ username: mydata.username });
+  
 
   if (tempAdmin || tempSecurity || tempUser) {
     return "Username already in use, please enter another username";
@@ -1021,57 +1034,7 @@ async function read(client, data) {
 }
 
 
-//Function to update data
-async function update(client, data, mydata) {
-  const usersCollection = client.db("assignment").collection("Users");
-
-  if (mydata.password) {
-    mydata.password = await encryptPassword(mydata.password);
-  }
-
-  const result = await usersCollection.updateOne(
-    { username: data.username },
-    { $set: mydata }
-  );
-
-  if (result.matchedCount === 0) {
-    return "User not found";
-  }
-
-  return "Update Successfully";
 }
-
-
-//Function to delete data
-async function deleteUser(client, data) {
-  const usersCollection = client.db("assignment").collection("Users");
-  const recordsCollection = client.db("assignment").collection("Records");
-  const securityCollection = client.db("assignment").collection("Security");
-
-  // Delete user document
-  const deleteResult = await usersCollection.deleteOne({ username: data.username });
-  if (deleteResult.deletedCount === 0) {
-    return "User not found";
-  }
-
-  // Update visitors array in other users' documents
-  await usersCollection.updateMany(
-    { visitors: data.username },
-    { $pull: { visitors: data.username } }
-  );
-
-  // Update visitors array in the Security collection
-  await securityCollection.updateMany(
-    { visitors: data.username },
-    { $pull: { visitors: data.username } }
-  );
-
-  return "Delete Successful\nBut the records are still in the database";
-}
-
-
-
-
 
 
 //Function to check in
@@ -1121,45 +1084,6 @@ async function checkIn(client, data, mydata) {
   return `You have checked in at '${currentCheckInTime}' with recordID '${mydata.recordID}'`;
 }
 
-
-
-//Function to check out
-async function checkOut(client, data) {
-  const usersCollection = client.db('assignment').collection('Users');
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  const currentUser = await usersCollection.findOne({ username: data.username });
-
-  if (!currentUser) {
-    return 'User not found';
-  }
-
-  if (!currentUser.currentCheckIn) {
-    return 'You have not checked in yet, please check in first!!!';
-  }
-
-  const checkOutTime = new Date();
-
-  const updateResult = await recordsCollection.updateOne(
-    { recordID: currentUser.currentCheckIn },
-    { $set: { checkOutTime: checkOutTime } }
-  );
-
-  if (updateResult.modifiedCount === 0) {
-    return 'Failed to update check-out time. Please try again.';
-  }
-
-  const unsetResult = await usersCollection.updateOne(
-    { username: currentUser.username },
-    { $unset: { currentCheckIn: 1 } }
-  );
-
-  if (unsetResult.modifiedCount === 0) {
-    return 'Failed to check out. Please try again.';
-  }
-
-  return `You have checked out at '${checkOutTime}' with recordID '${currentUser.currentCheckIn}'`;
-}
 
 
 
