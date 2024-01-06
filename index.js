@@ -828,6 +828,12 @@ function generateUniquePassIdentifier() {
  *           schema:
  *             type: object
  *             properties:
+ *               username:
+ *                 type: string
+ *                 description: Username of the host (security personnel's choice)
+ *               password:
+ *                 type: string
+ *                 description: Password for the host
  *               name:
  *                 type: string
  *                 description: Name of the host
@@ -839,6 +845,8 @@ function generateUniquePassIdentifier() {
  *                 type: string
  *                 description: Phone number of the host
  *             required:
+ *               - username
+ *               - password
  *               - name
  *               - email
  *               - phoneNumber
@@ -880,6 +888,69 @@ async function createHost(client, hostData) {
 }
 
 
+/**
+ * @swagger
+ * /loginHost:
+ *   post:
+ *     summary: Log in as a host
+ *     description: Log in as a host with valid credentials
+ *     tags:
+ *       - Host
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: Host username
+ *               password:
+ *                 type: string
+ *                 description: Host password
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Host login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in host
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ *       '500':
+ *         description: Internal Server Error
+ */
+
+app.post('/loginHost', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const host = await findHostByUsername(client, username);
+
+    if (host && await bcrypt.compare(password, host.password)) {
+      // Generate a token upon successful login
+      const token = jwt.sign({ username: host.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
+      res.status(200).json({ token });
+    } else {
+      res.status(401).send('Invalid credentials');
+    }
+  } catch (error) {
+    console.error('Error during host login:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Function to find a host by username
+async function findHostByUsername(client, username) {
+  return await client.db('assignment').collection('Host').findOne({ username });
+}
 
 
   /**
