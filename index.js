@@ -851,7 +851,7 @@ function generateUniquePassIdentifier() {
  *         description: Internal Server Error
  */
 
-app.post('/createHost', verifySecurityToken, async (req, res) => {
+app.post('/createHost', verifyToken, async (req, res) => {
   try {
     const hostData = req.body;
     const securityData = req.user;  // Details of the security personnel from the token
@@ -879,26 +879,6 @@ async function createHost(client, hostData) {
   return result.insertedId;
 }
 
-// Middleware to verify security token
-function verifySecurityToken(req, res, next) {
-  const header = req.headers.authorization;
-
-  if (!header) {
-    return res.status(401).send('Unauthorized');
-  }
-
-  const token = header.split(' ')[1];
-
-  jwt.verify(token, 'yourSecurityTokenSecret', function (err, decoded) {
-    if (err || decoded.role !== 'security') {
-      console.error(err);
-      return res.status(401).send('Invalid or insufficient security token');
-    }
-
-    req.user = decoded;
-    next();
-  });
-}
 
 
 
