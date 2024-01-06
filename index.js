@@ -768,12 +768,12 @@ function generateUniquePassIdentifier() {
  * @swagger
  * /registerHost:
  *   post:
- *     summary: Register a new host
- *     description: Register a new host with required details using a security token
+ *     summary: Register a new host with security token approval
+ *     description: Register a new host by providing the required details and obtaining approval with a security token
  *     tags:
  *       - Security
  *     security:
- *       - bearerAuth: []
+ *       - bearerAuth: []  # Security token required for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -784,54 +784,50 @@ function generateUniquePassIdentifier() {
  *               name:
  *                 type: string
  *                 description: Name of the host
- *               contactNumber:
- *                 type: string
- *                 description: Contact number of the host
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email address of the host
- *               company:
+ *                 description: Email of the host
+ *               phoneNumber:
  *                 type: string
- *                 description: Company associated with the host
+ *                 description: Phone number of the host
  *             required:
  *               - name
- *               - contactNumber
  *               - email
- *               - company
+ *               - phoneNumber
  *     responses:
  *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
+ *         description: Host registration successful, awaiting security approval
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
 
 app.post('/registerHost', verifySecurityToken, async (req, res) => {
-  let hostData = req.body;
-  res.send(await registerHost(client, hostData));
-});
-
-// Function to register a host
-async function registerHost(client, hostData) {
   try {
-    const result = await client
-      .db('assignment')
-      .collection('Hosts')  // Save in the "Hosts" collection
-      .insertOne(hostData);
+    const hostData = req.body;
+    const securityData = req.user;  // Details of the security personnel from the token
 
-    if (result.insertedCount > 0) {
-      return 'Host registration successful';
+    // Perform any additional checks or validations based on your requirements
+
+    // Save host registration data to a new 'Host' collection (or any desired collection)
+    const result = await registerHost(client, hostData);
+
+    if (result) {
+      res.status(200).send('Host registration successful, awaiting security approval');
     } else {
-      return 'Failed to register host';
+      res.status(500).send('Error registering host');
     }
   } catch (error) {
     console.error('Error registering host:', error);
-    return 'Internal Server Error';
+    res.status(500).send('Internal Server Error');
   }
+});
+
+// Function to register a new host
+async function registerHost(client, hostData) {
+  // Save host data to the 'Host' collection (or any desired collection)
+  const result = await client.db('assignment').collection('Host').insertOne(hostData);
+  return result.insertedId;
 }
 
 // Middleware to verify security token
@@ -845,7 +841,7 @@ function verifySecurityToken(req, res, next) {
   const token = header.split(' ')[1];
 
   jwt.verify(token, 'yourSecurityTokenSecret', function(err, decoded) {
-    if (err || decoded.role !== 'Security') {
+    if (err || decoded.role !== 'security') {
       console.error(err);
       return res.status(401).send('Invalid or insufficient security token');
     }
@@ -854,6 +850,7 @@ function verifySecurityToken(req, res, next) {
     next();
   });
 }
+
 
 
   /**
