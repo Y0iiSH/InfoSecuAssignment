@@ -898,8 +898,12 @@ async function registerHost(client, data, mydata) {
  *     description: Retrieve all visitor records for a host
  *     tags:
  *       - Host
- *     security:
- *       - bearerAuth: []  # Host token required for authentication
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         description: Host token (Bearer)
+ *         required: true
+ *         type: string
  *     responses:
  *       '200':
  *         description: Successfully retrieved all records
@@ -932,40 +936,34 @@ async function registerHost(client, data, mydata) {
  *         description: Internal Server Error
  */
 
-app.get('/hostSeeAllRecords', verifyHostToken, async (req, res) => {
+app.get('/hostSeeAllRecords', async (req, res) => {
   try {
-    const hostData = req.user; // Details of the host from the token
+    const header = req.headers.authorization;
 
-    // Retrieve all records for the host
-    const records = await getAllRecordsForHost(client, hostData);
+    if (!header) {
+      return res.status(401).send('Unauthorized');
+    }
 
-    res.status(200).json(records);
+    const token = header.split(' ')[1];
+
+    jwt.verify(token, 'yourHostTokenSecret', async function (err, decoded) {
+      if (err || decoded.role !== 'host') {
+        console.error(err);
+        return res.status(401).send('Invalid or insufficient host token');
+      }
+
+      const hostData = decoded; // Details of the host from the token
+
+      // Retrieve all records for the host
+      const records = await getAllRecordsForHost(client, hostData);
+
+      res.status(200).json(records);
+    });
   } catch (error) {
     console.error('Error retrieving records:', error);
     res.status(500).send('Internal Server Error');
   }
 });
-
-// Middleware to verify host token
-function verifyHostToken(req, res, next) {
-  const header = req.headers.authorization;
-
-  if (!header) {
-    return res.status(401).send('Unauthorized');
-  }
-
-  const token = header.split(' ')[1];
-
-  jwt.verify(token, 'yourHostTokenSecret', function (err, decoded) {
-    if (err || decoded.role !== 'host') {
-      console.error(err);
-      return res.status(401).send('Invalid or insufficient host token');
-    }
-
-    req.user = decoded;
-    next();
-  });
-}
 
 // Function to retrieve all records for a host
 async function getAllRecordsForHost(client, hostData) {
@@ -976,6 +974,7 @@ async function getAllRecordsForHost(client, hostData) {
 
   return records;
 }
+
 
 
 
