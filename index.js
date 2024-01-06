@@ -765,15 +765,59 @@ function generateUniquePassIdentifier() {
 
 
 /**
+ * Middleware to verify token for security or admin
+ */
+function verifyToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, 'yourSecret', function (err, decoded) {
+    if (err || (decoded.role !== 'security' && decoded.role !== 'admin')) {
+      console.error(err);
+      return res.status(401).send('Invalid or insufficient token');
+    }
+
+    req.user = decoded;
+    next();
+  });
+}
+
+// Middleware to verify token for security
+function verifySecurityToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, 'yourSecret', function (err, decoded) {
+    if (err || decoded.role !== 'security') {
+      console.error(err);
+      return res.status(401).send('Invalid or insufficient security token');
+    }
+
+    req.user = decoded;
+    next();
+  });
+}
+
+/**
  * @swagger
  * /registerHost:
  *   post:
- *     summary: Register a new host with security token approval
- *     description: Register a new host by providing the required details and obtaining approval with a security token
+ *     summary: Register a new host with security or admin token approval
+ *     description: Register a new host by providing the required details and obtaining approval with a security or admin token
  *     tags:
  *       - Security
  *     security:
- *       - bearerAuth: []  # Security token required for authentication
+ *       - bearerAuth: []  # Security or admin token required for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -797,15 +841,15 @@ function generateUniquePassIdentifier() {
  *               - phoneNumber
  *     responses:
  *       '200':
- *         description: Host registration successful, awaiting security approval
+ *         description: Host registration successful, awaiting security or admin approval
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
 
-app.post('/registerHost', verifySecurityToken, async (req, res) => {
+app.post('/registerHost', verifyToken, async (req, res) => {
   try {
     const hostData = req.body;
-    const securityData = req.user;  // Details of the security personnel from the token
+    const securityData = req.user;  // Details of the security personnel or admin from the token
 
     // Perform any additional checks or validations based on your requirements
 
@@ -813,7 +857,7 @@ app.post('/registerHost', verifySecurityToken, async (req, res) => {
     const result = await registerHost(client, hostData);
 
     if (result) {
-      res.status(200).send('Host registration successful, awaiting security approval');
+      res.status(200).send('Host registration successful, awaiting security or admin approval');
     } else {
       res.status(500).send('Error registering host');
     }
@@ -823,33 +867,6 @@ app.post('/registerHost', verifySecurityToken, async (req, res) => {
   }
 });
 
-// Function to register a new host
-async function registerHost(client, hostData) {
-  // Save host data to the 'Host' collection (or any desired collection)
-  const result = await client.db('assignment').collection('Host').insertOne(hostData);
-  return result.insertedId;
-}
-
-// Middleware to verify security token
-function verifySecurityToken(req, res, next) {
-  const header = req.headers.authorization;
-
-  if (!header) {
-    return res.status(401).send('Unauthorized');
-  }
-
-  const token = header.split(' ')[1];
-
-  jwt.verify(token, 'yourSecurityTokenSecret', function(err, decoded) {
-    if (err || decoded.role !== 'security') {
-      console.error(err);
-      return res.status(401).send('Invalid or insufficient security token');
-    }
-
-    req.user = decoded;
-    next();
-  });
-}
 
 
 
