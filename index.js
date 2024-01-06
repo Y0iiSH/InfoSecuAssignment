@@ -865,10 +865,10 @@ function generateUniquePassIdentifier() {
 app.post('/registerHost', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
-  res.send(await register(client, data, mydata));
+  res.send(await registerHost(client, data, mydata));
 });
 
-async function register(client, data, mydata) {
+async function registerHost(client, data, mydata) {
   const result = await client
     .db('assignment')
     .collection('Host')
@@ -878,12 +878,13 @@ async function register(client, data, mydata) {
       name: mydata.name,
       email: mydata.email,
       phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      icNumber: mydata.icNumber,
       role: mydata.role,
     });
 
-  return 'Host personnel registration successful';
+  return 'Host registration successful';
 }
+
 
 /**
  * @swagger
@@ -1054,7 +1055,7 @@ async function decryptPassword(password, compare) {
 }
 
 
-/*// Function to register security, visitor, and host
+//Function to register security, visitor, and host
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
@@ -1129,7 +1130,7 @@ async function register(client, data, mydata) {
 
     return "Host registered successfully";
   }
-}*/
+}
 
 // Function to encrypt password (you need to implement this function)
 async function encryptPassword(password) {
