@@ -150,54 +150,138 @@ async function run() {
     res.send(await login(client, data));
   });
 
-
-  /**
+/**
  * @swagger
- * /readAdmin:
+ * /readAllData:
  *   get:
- *     summary: Read admin details
- *     description: Get details of the logged-in admin
+ *     summary: Read all data from the database
+ *     description: Get all data from the database (requires admin token)
  *     tags:
  *       - Admin
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: Admin details retrieved successfully
+ *         description: All data retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 username:
- *                   type: string
- *                   description: Username of the admin
- *                 name:
- *                   type: string
- *                   description: Name of the admin
- *                 email:
- *                   type: string
- *                   format: email
- *                   description: Email of the admin
- *                 phoneNumber:
- *                   type: string
- *                   description: Phone number of the admin
- *                 role:
- *                   type: string
- *                   description: Role of the admin
+ *                 admins:
+ *                   type: array
+ *                   description: List of admin details
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                 securityPersonnel:
+ *                   type: array
+ *                   description: List of security personnel details
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       visitors:
+ *                         type: array
+ *                         description: List of visitors associated with the security personnel
+ *                         items:
+ *                           type: string
+ *                 visitors:
+ *                   type: array
+ *                   description: List of visitor details
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       records:
+ *                         type: array
+ *                         description: List of records associated with the visitor
+ *                         items:
+ *                           type: string
+ *                 records:
+ *                   type: array
+ *                   description: List of all records
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       recordID:
+ *                         type: string
+ *                       username:
+ *                         type: string
+ *                       purpose:
+ *                         type: string
+ *                       checkInTime:
+ *                         type: string
+ *                       checkOutTime:
+ *                         type: string
+ *     responses:
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
+app.get('/readAllData', verifyAdminToken, async (req, res) => {
+  res.send(await readAllData(client));
+});
 
-  app.get('/readAdmin', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
+// Function to read all data from the database
+async function readAllData(client) {
+  const admins = await client.db('assignment').collection('Admin').find().toArray();
+  const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
+  const records = await client.db('assignment').collection('Records').find().toArray();
+
+  return { admins, securityPersonnel, visitors, records };
+}
+
+// Middleware to verify admin token
+function verifyAdminToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, 'dinpassword', function(err, decoded) {
+    if (err || decoded.role !== 'Admin') {
+      console.error(err);
+      return res.status(401).send('Invalid or insufficient admin token');
+    }
+
+    req.user = decoded;
+    next();
   });
-
-
-
-
-
+}
 
 /**
  * @swagger
@@ -319,10 +403,10 @@ async function deleteUser(client, icNumber, role) {
 app.post('/registerSecurity', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
-  res.send(await registerSecurity(client, data, mydata));
+  res.send(await register(client, data, mydata));
 });
 
-async function registerSecurity(client, data, mydata) {
+async function register(client, data, mydata) {
   const result = await client
     .db('assignment')
     .collection('Security')
@@ -339,100 +423,12 @@ async function registerSecurity(client, data, mydata) {
   return 'Security personnel registration successful';
 }
 
-/**
- * @swagger
- * /getSecurityContact:
- *   get:
- *     summary: Get the contact number of the security from the given visitor pass
- *     description: Get the contact number of the security personnel who issued the provided visitor pass (requires admin token)
- *     tags:
- *       - Admin
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: passIdentifier
- *         required: true
- *         description: Visitor pass identifier
- *         schema:
- *           type: string
- *     responses:
- *       '200':
- *         description: Security contact retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 securityName:
- *                   type: string
- *                 contactNumber:
- *                   type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '404':
- *         description: Visitor pass not found or security information not available
- */
-app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
-  const { passIdentifier } = req.query;
-  const securityInfo = await getSecurityContact(client, passIdentifier);
 
-  if (securityInfo) {
-    res.status(200).json(securityInfo);
-  } else {
-    res.status(404).send('Visitor pass not found or security information not available');
-  }
-});
-
-// Function to get security information by issuedBy (assuming it's the username)
-async function getSecurityInfo(client, issuedBy) {
-  const securityInfo = await client
-    .db('assignment')  // Ensure the correct database name is used
-    .collection('Security')
-    .findOne({ username: issuedBy });  // Assuming issuedBy corresponds to the security username
-
-  return securityInfo;
-}
-
-
-// Function to get security contact by visitor pass ID
-async function getSecurityContact(client, passIdentifier) {
-  try {
-    const visitorPass = await client
-      .db('assignment')
-      .collection('Records')
-      .findOne({ passIdentifier });
-
-    if (visitorPass && visitorPass.issuedBy) {
-      // Assuming the security personnel's name is stored in the `issuedBy` field
-      const securityInfo = await client
-        .db('assignment')
-        .collection('Security')
-        .findOne({ username: visitorPass.issuedBy });
-
-      if (securityInfo && securityInfo.phoneNumber) {
-        return {
-          securityName: securityInfo.username,
-          contactNumber: securityInfo.phoneNumber,
-        };
-      } else {
-        console.error('Security information not found or missing phoneNumber field.');
-      }
-    } else {
-      console.error('Visitor pass not found or missing issuedBy field.');
-    }
-  } catch (error) {
-    console.error('Error fetching security information:', error);
-  }
-
-  return null;
-}
+ 
 
 
 
-
-
-/**
+  /**
  * @swagger
  * /loginSecurity:
  *   post:
@@ -468,11 +464,10 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-app.post('/loginSecurity', async (req, res) => {
-  let data = req.body;
-  res.send(await login(client, data));
-});
-
+  app.post('/loginSecurity', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
 
 /**
 /**
@@ -546,127 +541,6 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
   return passInfo;
 }
 
-
-
-
-/**
- * @swagger
- * /registerHost:
- *   post:
- *     summary: Register a new host
- *     description: Register a new host with required details
- *     tags:
- *       - Host
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phoneNumber:
- *                 type: string
- *               icNumber:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum:
- *                   - Host
- *             required:
- *               - username
- *               - password
- *               - name
- *               - email
- *               - phoneNumber
- *               - icNumber
- *               - role
- *     responses:
- *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-app.post('/registerHost', verifyToken, async (req, res) => {
-  let data = req.user;
-  let mydata = req.body;
-  res.send(await registerHost(client, data, mydata));
-});
-
-async function registerHost(client, data, mydata) {
-  const result = await client
-    .db('assignment')
-    .collection('Host')
-    .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,  // Ensure icNumber is included
-      role: mydata.role,
-    });
-
-  return 'Host registration successful';
-}
-
-
-
-/**
- * @swagger
- * /loginHost:
- *   post:
- *     summary: Log in as host
- *     description: Log in as host 
- *     tags:
- *       - Host
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Host login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in host personnel
- *       '401':
- *         description: Unauthorized - Invalid credentials
- */
-app.post('/loginHost', async (req, res) => {
-  let data = req.body;
-  res.send(await login(client, data));
-});
-
 /**
  * @swagger
  * /issueVisitorPass:
@@ -674,7 +548,7 @@ app.post('/loginHost', async (req, res) => {
  *     summary: Issue a visitor pass
  *     description: Issue a visitor pass for a visitor without creating a visitor account
  *     tags:
- *       - Host
+ *       - Security
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -711,17 +585,17 @@ app.post('/loginHost', async (req, res) => {
  *         description: Unauthorized - Token is missing or invalid
  */
 app.post('/issueVisitorPass', verifyToken, async (req, res) => {
-  let hostData = req.user; // Assuming the verified token contains host information
+  let securityData = req.user;
   let visitorData = req.body;
 
   // Create a visitor record without creating a visitor account
-  const result = await issueVisitorPass(client, hostData, visitorData);
+  const result = await issueVisitorPass(client, securityData, visitorData);
 
   res.send(result);
 });
 
 // Function to issue a visitor pass
-async function issueVisitorPass(client, hostData, visitorData) {
+async function issueVisitorPass(client, securityData, visitorData) {
   const recordsCollection = client.db('assignment').collection('Records');
 
   // Check if the visitor already has a pass issued
@@ -744,13 +618,13 @@ async function issueVisitorPass(client, hostData, visitorData) {
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
     checkInTime: currentCheckInTime,
-    issuedBy: hostData.username // Add the issuedBy information from the host
+    issuedBy: securityData.username // Add the issuedBy information
   };
 
   // Insert the visitor record into the database
   await recordsCollection.insertOne(recordData);
 
-  return `Visitor pass issued successfully by ${hostData.username}. Pass Identifier: ${passIdentifier}`;
+  return `Visitor pass issued successfully by ${securityData.username}. Pass Identifier: ${passIdentifier}`;
 }
 
 // Function to generate a unique passIdentifier
@@ -759,11 +633,10 @@ function generateUniquePassIdentifier() {
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
-
 
 
 // Function to issue a visitor pass
-async function issueVisitorPass(client, hostData, visitorData) {
+async function issueVisitorPass(client, securityData, visitorData) {
   const recordsCollection = client.db('assignment').collection('Records');
 
   // Check if the visitor already has a pass issued
@@ -786,13 +659,13 @@ async function issueVisitorPass(client, hostData, visitorData) {
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
     checkInTime: currentCheckInTime,
-    issuedBy: hostData.username // Add the issuedBy information from the host
+    issuedBy: securityData.username // Add the issuedBy information
   };
 
   // Insert the visitor record into the database
   await recordsCollection.insertOne(recordData);
 
-  return `Visitor pass issued successfully by ${hostData.username}. Pass Identifier: ${passIdentifier}`;
+  return `Visitor pass issued successfully. Pass Identifier: ${passIdentifier}`;
 }
 
 // Function to generate a unique passIdentifier
@@ -803,66 +676,104 @@ function generateUniquePassIdentifier() {
 }
 
 
-/**
+
+
+
+  /**
  * @swagger
- * /readVisitor:
+ * /readAdmin:
  *   get:
- *     summary: Read visitor
- *     description: Get details of the logged-in visitor
+ *     summary: Read admin details
+ *     description: Get details of the logged-in admin
  *     tags:
- *       - Host
+ *       - Admin
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: Visitors details retrieved successfully
+ *         description: Admin details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 icNumber:
+ *                 username:
  *                   type: string
- *                   description: IC Number of the visitor
- *                 passIdentifier:
- *                   type: string
- *                   description: Pass Identifier of the visitor
+ *                   description: Username of the admin
  *                 name:
  *                   type: string
- *                   description: Name of the visitor
- *                 company:
+ *                   description: Name of the admin
+ *                 email:
  *                   type: string
- *                   description: Company of the visitor
- *                 vehicleNumber:
+ *                   format: email
+ *                   description: Email of the admin
+ *                 phoneNumber:
  *                   type: string
- *                   description: Vehicle Number of the visitor
- *                 purpose:
+ *                   description: Phone number of the admin
+ *                 role:
  *                   type: string
- *                   description: Purpose of the visit
- *                 checkInTime:
- *                   type: string
- *                   description: Check-in time of the visit
- *                 issuedBy:
- *                   type: string
- *                   description: Issued by (Host) of the visitor pass
+ *                   description: Role of the admin
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
 
-app.get('/readVisitor', verifyToken, async (req, res) => {
-  let data = req.user;
-  res.send(await readVisitor(client, data));
-});
+  app.get('/readAdmin', verifyToken, async (req, res) => {
+    let data = req.user;
+    res.send(await read(client, data));
+  });
 
-async function readVisitor(client, data){
-  if (data.role == 'Host') {
-    const Records = await client.db('assignment').collection('Records').toArray();
-
-    return { Records };
-  }
-}
+ 
+ 
 
 
+
+  /**
+ * @swagger
+ * /readSecurity:
+ *   get:
+ *     summary: Read security personnel details
+ *     description: Get details of the logged-in security personnel
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Security personnel details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 username:
+ *                   type: string
+ *                   description: Username of the security personnel
+ *                 name:
+ *                   type: string
+ *                   description: Name of the security personnel
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   description: Email of the security personnel
+ *                 phoneNumber:
+ *                   type: string
+ *                   description: Phone number of the security personnel
+ *                 role:
+ *                   type: string
+ *                   description: Role of the security personnel
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+  app.get('/readSecurity', verifyToken, async (req, res) => {
+    let data = req.user;
+    res.send(await read(client, data));
+  });
+
+
+
+
+ 
+ 
 
 }
 
@@ -872,7 +783,7 @@ run().catch(console.error);
 function generateToken(userProfile){
   return jwt.sign(
   userProfile,    //this is an obj
-  'mirulidham',           //password
+  'dinpassword',           //password
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
@@ -890,12 +801,11 @@ async function registerAdmin(client, data) {
 }
 
 
-
 //Function to login
 async function login(client, data) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const hostCollection = client.db("assignment").collection("Host");
+  const usersCollection = client.db("assignment").collection("Users");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -906,8 +816,8 @@ async function login(client, data) {
   }
 
   if (!match) {
-    // Find the host user
-    match = await hostCollection.findOne({ username: data.username });
+    // Find the regular user
+    match = await usersCollection.findOne({ username: data.username });
   }
 
   if (match) {
@@ -944,34 +854,21 @@ async function decryptPassword(password, compare) {
 }
 
 
-//Function to register security, visitor, and host
+//Function to register security and visitor
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const hostCollection = client.db("assignment").collection("Host");
+  
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  const tempHost = await hostCollection.findOne({ username: mydata.username });
+  
 
-  if (tempAdmin || tempSecurity || tempHost) {
+  if (tempAdmin || tempSecurity || tempUser) {
     return "Username already in use, please enter another username";
   }
 
   if (data.role === "Admin") {
-    const result = await adminCollection.insertOne({
-      username: mydata.username,
-      password: await encryptPassword(mydata.password),
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      role: "Admin",
-    });
-
-    return "Admin registered successfully";
-  }
-
-  if (data.role === "Security") {
     const result = await securityCollection.insertOne({
       username: mydata.username,
       password: await encryptPassword(mydata.password),
@@ -985,12 +882,14 @@ async function register(client, data, mydata) {
     return "Security registered successfully";
   }
 
-  if (data.role === "Visitor") {
-    const result = await securityCollection.insertOne({
+  if (data.role === "Security") {
+    const result = await usersCollection.insertOne({
       username: mydata.username,
       password: await encryptPassword(mydata.password),
       name: mydata.name,
       email: mydata.email,
+      
+      Security: data.username,
       company: mydata.company,
       vehicleNumber: mydata.vehicleNumber,
       icNumber: mydata.icNumber,
@@ -1006,30 +905,7 @@ async function register(client, data, mydata) {
 
     return "Visitor registered successfully";
   }
-
-  if (data.role === "Host") {
-    const result = await hostCollection.insertOne({
-      username: mydata.username,
-      password: await encryptPassword(mydata.password),
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      role: "Host",
-    });
-
-    return "Host registered successfully";
-  }
 }
-
-// Function to encrypt password (you need to implement this function)
-async function encryptPassword(password) {
-  // Implement your password encryption logic here
-  // For example, you can use bcrypt
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
-  return hashedPassword;
-}
-
 
 
 
@@ -1040,10 +916,10 @@ async function read(client, data) {
   if (data.role == 'Admin') {
     const Admins = await client.db('assignment').collection('Admin').find({ role: 'Admin' }).next();
     const Securitys = await client.db('assignment').collection('Security').find({ role: 'Security' }).toArray();
-    const Host = await client.db('assignment').collection('Host').toArray();
+    const Visitors = await client.db('assignment').collection('Users').find({ role: 'Visitor' }).toArray();
     const Records = await client.db('assignment').collection('Records').find().toArray();
 
-    return { Admins, Securitys, Host, Records };
+    return { Admins, Securitys, Visitors, Records };
   }
 
   if (data.role == 'Security') {
@@ -1057,11 +933,7 @@ async function read(client, data) {
 
     return { Security, Visitors, Records };
   }
-  if (data.role == 'Host') {
-    const Records = await client.db('assignment').collection('Records').find().toArray();
 
-    return { Records };
-  }
   if (data.role == 'Visitor') {
     const Visitor = await client.db('assignment').collection('Users').findOne({ username: data.username });
     if (!Visitor) {
@@ -1152,7 +1024,7 @@ function verifyToken(req, res, next) {
 
   let token = header.split(' ')[1];
 
-  jwt.verify(token, 'mirulidham', function(err, decoded) {
+  jwt.verify(token, 'dinpassword', function(err, decoded) {
     if (err) {
       console.error(err);
       return res.status(401).send('Invalid token');
