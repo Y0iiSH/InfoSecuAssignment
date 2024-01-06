@@ -1067,8 +1067,16 @@ app.post('/loginHost', async (req, res) => {
 
 app.get('/readVisitor', verifyToken, async (req, res) => {
   let data = req.user;
-  res.send(await read(client, data));
+  res.send(await readVisitor(client, data));
 });
+
+async function readVisitor(client, data){
+  if (data.role == 'Host') {
+    const Records = await client.db('assignment').collection('Records').toArray();
+
+    return { Records };
+  }
+}
 
 
 
