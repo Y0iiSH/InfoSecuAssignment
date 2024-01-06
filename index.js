@@ -862,13 +862,69 @@ function generateUniquePassIdentifier() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-app.post('/registerHost', async (req, res) => {
-  let data = req.body;
-  res.send(await register(client, data));
+app.post('/registerHost', verifyToken, async (req, res) => {
+  let data = req.user;
+  let mydata = req.body;
+  res.send(await register(client, data, mydata));
 });
 
+async function register(client, data, mydata) {
+  const result = await client
+    .db('assignment')
+    .collection('Host')
+    .insertOne({
+      username: mydata.username,
+      password: mydata.password,
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      role: mydata.role,
+    });
 
+  return 'Host personnel registration successful';
+}
 
+/**
+ * @swagger
+ * /loginHost:
+ *   post:
+ *     summary: Log in as shost
+ *     description: Log in as host 
+ *     tags:
+ *       - Host
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Host login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in host personnel
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
+app.post('/loginHost', async (req, res) => {
+  let data = req.body;
+  res.send(await login(client, data));
+});
 
   /**
  * @swagger
@@ -998,12 +1054,11 @@ async function decryptPassword(password, compare) {
 }
 
 
-//Function to register security and visitor and host
+/*// Function to register security, visitor, and host
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
   const hostCollection = client.db("assignment").collection("Host");
-  
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
@@ -1014,6 +1069,19 @@ async function register(client, data, mydata) {
   }
 
   if (data.role === "Admin") {
+    const result = await adminCollection.insertOne({
+      username: mydata.username,
+      password: await encryptPassword(mydata.password),
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      role: "Admin",
+    });
+
+    return "Admin registered successfully";
+  }
+
+  if (data.role === "Security") {
     const result = await securityCollection.insertOne({
       username: mydata.username,
       password: await encryptPassword(mydata.password),
@@ -1027,14 +1095,12 @@ async function register(client, data, mydata) {
     return "Security registered successfully";
   }
 
-  if (data.role === "Security") {
-    const result = await usersCollection.insertOne({
+  if (data.role === "Visitor") {
+    const result = await securityCollection.insertOne({
       username: mydata.username,
       password: await encryptPassword(mydata.password),
       name: mydata.name,
       email: mydata.email,
-      
-      Security: data.username,
       company: mydata.company,
       vehicleNumber: mydata.vehicleNumber,
       icNumber: mydata.icNumber,
@@ -1050,6 +1116,7 @@ async function register(client, data, mydata) {
 
     return "Visitor registered successfully";
   }
+
   if (data.role === "Host") {
     const result = await hostCollection.insertOne({
       username: mydata.username,
@@ -1057,12 +1124,22 @@ async function register(client, data, mydata) {
       name: mydata.name,
       email: mydata.email,
       phoneNumber: mydata.phoneNumber,
-      role: "Security",
+      role: "Host",
     });
 
     return "Host registered successfully";
   }
+}*/
+
+// Function to encrypt password (you need to implement this function)
+async function encryptPassword(password) {
+  // Implement your password encryption logic here
+  // For example, you can use bcrypt
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+  return hashedPassword;
 }
+
 
 
 
