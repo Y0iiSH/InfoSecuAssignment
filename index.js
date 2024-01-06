@@ -870,8 +870,25 @@ function generateUniquePassIdentifier() {
 app.post('/registerHost', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
-  res.send(await register(client, data, mydata));
+  res.send(await registerHost(client, data, mydata));
 });
+
+async function registerHost(client, data, mydata) {
+  const result = await client
+    .db('assignment')
+    .collection('Host')
+    .insertOne({
+      username: mydata.username,
+      password: mydata.password,
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      role: mydata.role,
+    });
+
+  return 'Host registration successful';
+}
 
 
 
