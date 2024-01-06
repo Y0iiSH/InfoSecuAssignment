@@ -764,6 +764,96 @@ function generateUniquePassIdentifier() {
 
 
 
+/**
+ * @swagger
+ * /registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with required details using a security token
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the host
+ *               contactNumber:
+ *                 type: string
+ *                 description: Contact number of the host
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address of the host
+ *               company:
+ *                 type: string
+ *                 description: Company associated with the host
+ *             required:
+ *               - name
+ *               - contactNumber
+ *               - email
+ *               - company
+ *     responses:
+ *       '200':
+ *         description: Host registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+
+app.post('/registerHost', verifySecurityToken, async (req, res) => {
+  let hostData = req.body;
+  res.send(await registerHost(client, hostData));
+});
+
+// Function to register a host
+async function registerHost(client, hostData) {
+  try {
+    const result = await client
+      .db('assignment')
+      .collection('Hosts')  // Save in the "Hosts" collection
+      .insertOne(hostData);
+
+    if (result.insertedCount > 0) {
+      return 'Host registration successful';
+    } else {
+      return 'Failed to register host';
+    }
+  } catch (error) {
+    console.error('Error registering host:', error);
+    return 'Internal Server Error';
+  }
+}
+
+// Middleware to verify security token
+function verifySecurityToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, 'yourSecurityTokenSecret', function(err, decoded) {
+    if (err || decoded.role !== 'Security') {
+      console.error(err);
+      return res.status(401).send('Invalid or insufficient security token');
+    }
+
+    req.user = decoded;
+    next();
+  });
+}
 
 
   /**
