@@ -150,130 +150,48 @@ async function run() {
     res.send(await login(client, data));
   });
 
-  /**
+
+ /**
  * @swagger
- * /readAllData:
+ * /showAlldata:
  *   get:
- *     summary: Read all data from the assignment database (requires admin token)
- *     description: Get all data from the assignment database (requires admin token)
+ *     summary: Read all details
+ *     description: Get details of the logged-in admin
  *     tags:
  *       - Admin
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: All data retrieved successfully
+ *         description: All details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 admins:
- *                   type: array
- *                   description: List of admin details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                 securityPersonnel:
- *                   type: array
- *                   description: List of security personnel details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                       visitors:
- *                         type: array
- *                         description: List of visitors associated with the security personnel
- *                         items:
- *                           type: string
- *              host:
- *                   type: array
- *                   description: List of host details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       password:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       icNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                 records:
- *                   type: array
- *                   description: List of all records
- *                   items:
- *                     type: object
- *                     properties:
- *                       recordID:
- *                         type: string
- *                       username:
- *                         type: string
- *                       purpose:
- *                         type: string
- *                       checkInTime:
- *                         type: string
- *                       checkOutTime:
- *                         type: string
- *     responses:
+ *                 username:
+ *                   type: string
+ *                   description: Username of the admin
+ *                 name:
+ *                   type: string
+ *                   description: Name of the admin
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   description: Email of the admin
+ *                 phoneNumber:
+ *                   type: string
+ *                   description: Phone number of the admin
+ *                 role:
+ *                   type: string
+ *                   description: Role of the admin
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-app.get('/readAllData', async (req, res) => {
-  const header = req.headers.authorization;
 
-  if (!header) {
-    return res.status(401).send('Unauthorized');
-  }
-
-  const token = header.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, 'mirulidham');
-    if (decoded.role !== 'Admin') {
-      console.error(err);
-      return res.status(401).send('Invalid or insufficient admin token');
-    }
-
-    const admins = await client.db('assignment').collection('Admin').find().toArray();
-    const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
-    const host = await client.db('assignment').collection('Host').find().toArray();
-    const records = await client.db('assignment').collection('Records').find().toArray();
-
-    res.send({ admins, securityPersonnel, host, records });
-  } catch (err) {
-    console.error(err);
-    res.status(401).send('Invalid or expired token');
-  }
+ app.get('/showAlldata', verifyToken, async (req, res) => {
+  let data = req.user;
+  res.send(await read(client, data));
 });
 
 
@@ -1119,10 +1037,10 @@ async function read(client, data) {
   if (data.role == 'Admin') {
     const Admins = await client.db('assignment').collection('Admin').find({ role: 'Admin' }).next();
     const Securitys = await client.db('assignment').collection('Security').find({ role: 'Security' }).toArray();
-    const Visitors = await client.db('assignment').collection('Users').find({ role: 'Visitor' }).toArray();
+    const Host = await client.db('assignment').collection(' Host').toArray();
     const Records = await client.db('assignment').collection('Records').find().toArray();
 
-    return { Admins, Securitys, Visitors, Records };
+    return { Admins, Securitys, Host, Records };
   }
 
   if (data.role == 'Security') {
