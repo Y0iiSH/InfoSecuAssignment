@@ -514,16 +514,12 @@ async function getSecurityContact(client, passIdentifier) {
 }
 
 
-
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
 /**
  * @swagger
- * /loginHost:
+ * /loginSecurity:
  *   post:
- *     summary: Log in as a host
- *     description: Log in as a host with valid credentials
+ *     summary: Log in as security personnel
+ *     description: Log in as security personnel with valid credentials
  *     tags:
  *       - Security
  *     requestBody:
@@ -542,7 +538,7 @@ const jwt = require('jsonwebtoken');
  *               - password
  *     responses:
  *       '200':
- *         description: Host login successful
+ *         description: Security personnel login successful
  *         content:
  *           application/json:
  *             schema:
@@ -550,38 +546,14 @@ const jwt = require('jsonwebtoken');
  *               properties:
  *                 token:
  *                   type: string
- *                   description: Authentication token for the logged-in host
+ *                   description: Authentication token for the logged-in security personnel
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-app.post('/loginHost', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Retrieve host data from the database based on the username
-    const hostData = await client.db('assignment').collection('Host').findOne({ username });
-
-    if (!hostData) {
-      return res.status(401).send('Invalid credentials');
-    }
-
-    // Compare the entered password with the hashed password from the database
-    const passwordMatch = await bcrypt.compare(password, hostData.passwordHash);
-
-    if (!passwordMatch) {
-      return res.status(401).send('Invalid credentials');
-    }
-
-    // Create a JWT token for the host
-    const token = jwt.sign({ username: hostData.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
-
-    res.status(200).json({ token });
-  } catch (error) {
-    console.error('Error during host login:', error);
-    res.status(500).send('Internal Server Error');
-  }
+app.post('/loginSecurity', async (req, res) => {
+  let data = req.body;
+  res.send(await login(client, data));
 });
-
 
 
 /**
@@ -839,16 +811,18 @@ function generateUniquePassIdentifier() {
 
  
  
+
+
+
+
 /**
  * @swagger
- * /createHost:
+ * /registerHost:
  *   post:
- *     summary: Create a new host using security token
- *     description: Create a new host by providing the required details using a security token
+ *     summary: Register a new host
+ *     description: Register a new host with required details
  *     tags:
  *       - Security
- *     security:
- *       - bearerAuth: []  # Security token required for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -858,170 +832,39 @@ function generateUniquePassIdentifier() {
  *             properties:
  *               username:
  *                 type: string
- *                 description: Username of the host (security personnel's choice)
  *               password:
  *                 type: string
- *                 description: Password for the host
  *               name:
  *                 type: string
- *                 description: Name of the host
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email of the host
  *               phoneNumber:
  *                 type: string
- *                 description: Phone number of the host
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - host
  *             required:
  *               - username
  *               - password
  *               - name
  *               - email
  *               - phoneNumber
+ *               - role
  *     responses:
  *       '201':
- *         description: Host created successfully
+ *         description: Host registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
- *       '500':
- *         description: Internal Server Error
  */
-
-app.post('/createHost', verifyToken, async (req, res) => {
-  try {
-    const hostData = req.body;
-    const securityData = req.user;  // Details of the security personnel from the token
-
-    // Perform any additional checks or validations based on your requirements
-
-    // Save host data to the 'Host' collection
-    const result = await createHost(client, hostData);
-
-    if (result) {
-      res.status(201).send('Host created successfully');
-    } else {
-      res.status(500).send('Error creating host');
-    }
-  } catch (error) {
-    console.error('Error creating host:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// Function to create a new host
-async function createHost(client, hostData) {
-  // Save host data to the 'Host' collection (or any desired collection)
-  const result = await client.db('assignment').collection('Host').insertOne(hostData);
-  return result.insertedId;
-}
-
-
-/**
- * @swagger
- * /loginHost:
- *   post:
- *     summary: Log in as a host
- *     description: Log in as a host with valid credentials
- *     tags:
- *       - Host
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 description: Host username
- *               password:
- *                 type: string
- *                 description: Host password
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Host login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in host
- *       '401':
- *         description: Unauthorized - Invalid credentials
- *       '500':
- *         description: Internal Server Error
- */
-
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-/**
- * @swagger
- * /loginHost:
- *   post:
- *     summary: Log in as a host
- *     description: Log in as a host with valid credentials
- *     tags:
- *       - Security
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Host login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in host
- *       '401':
- *         description: Unauthorized - Invalid credentials
- */
-app.post('/loginHost', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Retrieve host data from the database based on the username
-    const hostData = await client.db('assignment').collection('Host').findOne({ username });
-
-    if (!hostData) {
-      return res.status(401).send('Invalid username');
-    }
-
-    // Compare the entered password with the hashed password from the database
-    const passwordMatch = await bcrypt.compare(password, hostData.password);
-
-    if (!passwordMatch) {
-      return res.status(401).send('wrong password');
-    }
-
-    // Create a JWT token for the host
-    const token = jwt.sign({ username: hostData.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
-
-    res.status(200).json({ token });
-  } catch (error) {
-    console.error('Error during host login:', error);
-    res.status(500).send('Internal Server Error');
-  }
+app.post('/registerHost', async (req, res) => {
+  let data = req.body;
+  res.send(await register(client, data));
 });
 
 
@@ -1101,11 +944,12 @@ async function registerAdmin(client, data) {
 }
 
 
+
 //Function to login
 async function login(client, data) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const usersCollection = client.db("assignment").collection("Users");
+  const hostCollection = client.db("assignment").collection("Host");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -1116,8 +960,8 @@ async function login(client, data) {
   }
 
   if (!match) {
-    // Find the regular user
-    match = await usersCollection.findOne({ username: data.username });
+    // Find the host user
+    match = await hostCollection.findOne({ username: data.username });
   }
 
   if (match) {
@@ -1154,17 +998,18 @@ async function decryptPassword(password, compare) {
 }
 
 
-//Function to register security and visitor
+//Function to register security and visitor and host
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
+  const hostCollection = client.db("assignment").collection("Host");
   
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  
+  const tempHost = await hostCollection.findOne({ username: mydata.username });
 
-  if (tempAdmin || tempSecurity || tempUser) {
+  if (tempAdmin || tempSecurity || tempHost) {
     return "Username already in use, please enter another username";
   }
 
@@ -1204,6 +1049,18 @@ async function register(client, data, mydata) {
     );
 
     return "Visitor registered successfully";
+  }
+  if (data.role === "Host") {
+    const result = await hostCollection.insertOne({
+      username: mydata.username,
+      password: await encryptPassword(mydata.password),
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      role: "Security",
+    });
+
+    return "Host registered successfully";
   }
 }
 
