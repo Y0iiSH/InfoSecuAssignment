@@ -932,39 +932,70 @@ async function createHost(client, hostData) {
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+/**
+ * @swagger
+ * /loginHost:
+ *   post:
+ *     summary: Log in as a host
+ *     description: Log in as a host with valid credentials
+ *     tags:
+ *       - Security
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Host login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in host
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
 app.post('/loginHost', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
-    // Find the host by username
-    const host = await findHostByUsername(client, username);
 
-    if (host) {
-      // Compare the provided password with the hashed password in the database
-      const passwordMatch = await bcrypt.compare(password, host.password);
+    // Retrieve host data from the database based on the username
+    const hostData = await client.db('assignment').collection('Host').findOne({ username });
 
-      if (passwordMatch) {
-        // Password matches, generate a token and send it in the response
-        const token = jwt.sign({ username: host.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
-        res.status(200).json({ token });
-      } else {
-        // Password does not match
-        res.status(401).send('Invalid credentials');
-      }
-    } else {
-      // No host found with the provided username
-      res.status(401).send('Invalid credentials');
+    if (!hostData) {
+      return res.status(401).send('Invalid username');
     }
+
+    // Compare the entered password with the hashed password from the database
+    const passwordMatch = await bcrypt.compare(password, hostData.password);
+
+    if (!passwordMatch) {
+      return res.status(401).send('wrong password');
+    }
+
+    // Create a JWT token for the host
+    const token = jwt.sign({ username: hostData.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
+
+    res.status(200).json({ token });
   } catch (error) {
     console.error('Error during host login:', error);
     res.status(500).send('Internal Server Error');
   }
 });
 
-// Function to find a host by username
-async function findHostByUsername(client, username) {
-  return await client.db('assignment').collection('Host').findOne({ username });
-}
 
 
 
