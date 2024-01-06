@@ -811,6 +811,94 @@ function generateUniquePassIdentifier() {
 
  
  
+/**
+ * @swagger
+ * /createHost:
+ *   post:
+ *     summary: Create a new host using security token
+ *     description: Create a new host by providing the required details using a security token
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []  # Security token required for authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Name of the host
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email of the host
+ *               phoneNumber:
+ *                 type: string
+ *                 description: Phone number of the host
+ *             required:
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *     responses:
+ *       '201':
+ *         description: Host created successfully
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '500':
+ *         description: Internal Server Error
+ */
+
+app.post('/createHost', verifySecurityToken, async (req, res) => {
+  try {
+    const hostData = req.body;
+    const securityData = req.user;  // Details of the security personnel from the token
+
+    // Perform any additional checks or validations based on your requirements
+
+    // Save host data to the 'Host' collection
+    const result = await createHost(client, hostData);
+
+    if (result) {
+      res.status(201).send('Host created successfully');
+    } else {
+      res.status(500).send('Error creating host');
+    }
+  } catch (error) {
+    console.error('Error creating host:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Function to create a new host
+async function createHost(client, hostData) {
+  // Save host data to the 'Host' collection (or any desired collection)
+  const result = await client.db('assignment').collection('Host').insertOne(hostData);
+  return result.insertedId;
+}
+
+// Middleware to verify security token
+function verifySecurityToken(req, res, next) {
+  const header = req.headers.authorization;
+
+  if (!header) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, 'yourSecurityTokenSecret', function (err, decoded) {
+    if (err || decoded.role !== 'security') {
+      console.error(err);
+      return res.status(401).send('Invalid or insufficient security token');
+    }
+
+    req.user = decoded;
+    next();
+  });
+}
 
 
 
