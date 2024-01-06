@@ -1034,7 +1034,7 @@ async function read(client, data) {
 }
 
 
-}
+
 
 
 //Function to check in
