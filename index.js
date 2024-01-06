@@ -635,7 +635,7 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *     summary: Issue a visitor pass
  *     description: Issue a visitor pass for a visitor without creating a visitor account
  *     tags:
- *       - Security
+ *       - Host
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -672,17 +672,17 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *         description: Unauthorized - Token is missing or invalid
  */
 app.post('/issueVisitorPass', verifyToken, async (req, res) => {
-  let securityData = req.user;
+  let hostData = req.user; // Assuming the verified token contains host information
   let visitorData = req.body;
 
   // Create a visitor record without creating a visitor account
-  const result = await issueVisitorPass(client, securityData, visitorData);
+  const result = await issueVisitorPass(client, hostData, visitorData);
 
   res.send(result);
 });
 
 // Function to issue a visitor pass
-async function issueVisitorPass(client, securityData, visitorData) {
+async function issueVisitorPass(client, hostData, visitorData) {
   const recordsCollection = client.db('assignment').collection('Records');
 
   // Check if the visitor already has a pass issued
@@ -705,13 +705,13 @@ async function issueVisitorPass(client, securityData, visitorData) {
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
     checkInTime: currentCheckInTime,
-    issuedBy: securityData.username // Add the issuedBy information
+    issuedBy: hostData.username // Add the issuedBy information from the host
   };
 
   // Insert the visitor record into the database
   await recordsCollection.insertOne(recordData);
 
-  return `Visitor pass issued successfully by ${securityData.username}. Pass Identifier: ${passIdentifier}`;
+  return `Visitor pass issued successfully by ${hostData.username}. Pass Identifier: ${passIdentifier}`;
 }
 
 // Function to generate a unique passIdentifier
@@ -720,10 +720,11 @@ function generateUniquePassIdentifier() {
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
+
 
 
 // Function to issue a visitor pass
-async function issueVisitorPass(client, securityData, visitorData) {
+async function issueVisitorPass(client, hostData, visitorData) {
   const recordsCollection = client.db('assignment').collection('Records');
 
   // Check if the visitor already has a pass issued
@@ -746,13 +747,13 @@ async function issueVisitorPass(client, securityData, visitorData) {
     vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
     checkInTime: currentCheckInTime,
-    issuedBy: securityData.username // Add the issuedBy information
+    issuedBy: hostData.username // Add the issuedBy information from the host
   };
 
   // Insert the visitor record into the database
   await recordsCollection.insertOne(recordData);
 
-  return `Visitor pass issued successfully. Pass Identifier: ${passIdentifier}`;
+  return `Visitor pass issued successfully by ${hostData.username}. Pass Identifier: ${passIdentifier}`;
 }
 
 // Function to generate a unique passIdentifier
@@ -761,6 +762,7 @@ function generateUniquePassIdentifier() {
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
+
 
 
 
@@ -889,92 +891,6 @@ async function registerHost(client, data, mydata) {
 
   return 'Host registration successful';
 }
-
-/**
- * @swagger
- * /hostSeeAllRecords:
- *   get:
- *     summary: View all records as a host
- *     description: Retrieve all visitor records for a host
- *     tags:
- *       - Host
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         description: Host token (Bearer)
- *         required: true
- *         type: string
- *     responses:
- *       '200':
- *         description: Successfully retrieved all records
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   icNumber:
- *                     type: string
- *                   passIdentifier:
- *                     type: string
- *                   name:
- *                     type: string
- *                   company:
- *                     type: string
- *                   vehicleNumber:
- *                     type: string
- *                   purpose:
- *                     type: string
- *                   checkInTime:
- *                     type: string
- *                   issuedBy:
- *                     type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '500':
- *         description: Internal Server Error
- */
-
-app.get('/hostSeeAllRecords', async (req, res) => {
-  try {
-    const header = req.headers.authorization;
-
-    if (!header) {
-      return res.status(401).send('Unauthorized');
-    }
-
-    const token = header.split(' ')[1];
-
-    jwt.verify(token, 'yourHostTokenSecret', async function (err, decoded) {
-      if (err || decoded.role !== 'host') {
-        console.error(err);
-        return res.status(401).send('Invalid or insufficient host token');
-      }
-
-      const hostData = decoded; // Details of the host from the token
-
-      // Retrieve all records for the host
-      const records = await getAllRecordsForHost(client, hostData);
-
-      res.status(200).json(records);
-    });
-  } catch (error) {
-    console.error('Error retrieving records:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// Function to retrieve all records for a host
-async function getAllRecordsForHost(client, hostData) {
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  // Retrieve all records where the host is the issuer
-  const records = await recordsCollection.find({ issuedBy: hostData.username }).toArray();
-
-  return records;
-}
-
 
 
 
