@@ -403,10 +403,10 @@ async function deleteUser(client, icNumber, role) {
 app.post('/registerSecurity', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
-  res.send(await register(client, data, mydata));
+  res.send(await registerSecurity(client, data, mydata));
 });
 
-async function register(client, data, mydata) {
+async function registerSecurity(client, data, mydata) {
   const result = await client
     .db('assignment')
     .collection('Security')
@@ -823,6 +823,8 @@ function generateUniquePassIdentifier() {
  *     description: Register a new host with required details
  *     tags:
  *       - Security
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -841,6 +843,8 @@ function generateUniquePassIdentifier() {
  *                 format: email
  *               phoneNumber:
  *                 type: string
+ *               icNumber:
+ *                 type: string
  *               role:
  *                 type: string
  *                 enum:
@@ -851,9 +855,10 @@ function generateUniquePassIdentifier() {
  *               - name
  *               - email
  *               - phoneNumber
+ *               - icNumber
  *               - role
  *     responses:
- *       '201':
+ *       '200':
  *         description: Host registration successful
  *         content:
  *           text/plain:
@@ -865,32 +870,16 @@ function generateUniquePassIdentifier() {
 app.post('/registerHost', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
-  res.send(await registerHost(client, data, mydata));
+  res.send(await register(client, data, mydata));
 });
 
-async function registerHost(client, data, mydata) {
-  const result = await client
-    .db('assignment')
-    .collection('Host')
-    .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,
-      role: mydata.role,
-    });
-
-  return 'Host registration successful';
-}
 
 
 /**
  * @swagger
  * /loginHost:
  *   post:
- *     summary: Log in as shost
+ *     summary: Log in as host
  *     description: Log in as host 
  *     tags:
  *       - Host
@@ -1055,7 +1044,7 @@ async function decryptPassword(password, compare) {
 }
 
 
-/*/Function to register security, visitor, and host
+//Function to register security, visitor, and host
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
