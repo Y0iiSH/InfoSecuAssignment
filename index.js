@@ -468,11 +468,11 @@ async function getSecurityContact(client, passIdentifier) {
       const securityInfo = await client
         .db('assignment')
         .collection('Security')
-        .findOne({ name: visitorPass.issuedBy });
+        .findOne({ username: visitorPass.issuedBy });
 
       if (securityInfo && securityInfo.phoneNumber) {
         return {
-          securityName: securityInfo.name,
+          securityName: securityInfo.username,
           contactNumber: securityInfo.phoneNumber,
         };
       } else {
