@@ -1055,7 +1055,7 @@ async function decryptPassword(password, compare) {
 }
 
 
-//Function to register security, visitor, and host
+/*/Function to register security, visitor, and host
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
@@ -1139,7 +1139,7 @@ async function encryptPassword(password) {
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   return hashedPassword;
-}
+}*/
 
 
 
