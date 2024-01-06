@@ -663,9 +663,18 @@ async function registerHost(client, data, mydata) {
  *         description: Unauthorized - Invalid credentials
  */
 app.post('/loginHost', async (req, res) => {
-  let data = req.body;
-  res.send(await login(client, data));
+  const data = req.body;
+  try {
+    const result = await login(client, data);
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
+
+
+
 
 /**
  * @swagger
@@ -897,34 +906,28 @@ async function login(client, data) {
   const securityCollection = client.db("assignment").collection("Security");
   const hostCollection = client.db("assignment").collection("Host");
 
-  // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
 
   if (!match) {
-    // Find the security user
     match = await securityCollection.findOne({ username: data.username });
   }
 
   if (!match) {
-    // Find the host user
     match = await hostCollection.findOne({ username: data.username });
   }
 
   if (match) {
-    // Compare the provided password with the stored password
     const isPasswordMatch = await decryptPassword(data.password, match.password);
 
     if (isPasswordMatch) {
-      console.clear(); // Clear the console
       const token = generateToken(match);
-      console.log(output(match.role));
-      return "\nToken for " + match.name + ": " + token;
-    }
-     else {
-      return "Wrong password";
+      // You might want to avoid unnecessary console output here
+      return { message: "Host login successful", token };
+    } else {
+      throw new Error("Wrong password");
     }
   } else {
-    return "User not found";
+    throw new Error("User not found");
   }
 }
 
