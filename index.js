@@ -340,14 +340,14 @@ async function registerSecurity(client, data, mydata) {
 }
 
 
- /**
+/**
  * @swagger
- * /getSecurityContact:
+ * /getHostContact:
  *   get:
- *     summary: Get the contact number of the security from the given visitor pass
- *     description: Get the contact number of the security personnel who issued the provided visitor pass (requires admin token)
+ *     summary: Get the contact number of the host from the given visitor pass
+ *     description: Get the contact number of the host who issued the provided visitor pass (requires host token)
  *     tags:
- *       - Admin
+ *       - Host
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -359,45 +359,55 @@ async function registerSecurity(client, data, mydata) {
  *           type: string
  *     responses:
  *       '200':
- *         description: Security contact retrieved successfully
+ *         description: Host contact retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 securityName:
+ *                 hostName:
  *                   type: string
  *                 contactNumber:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
- *         description: Visitor pass not found or security information not available
+ *         description: Visitor pass not found or host information not available
  */
-app.get('/getSecurityContact', verifyAdminToken, async (req, res) => {
-  const { passIdentifier } = req.query;
-  const securityInfo = await getSecurityContact(client, passIdentifier);
+app.get('/getHostContact', async (req, res) => {
+  const header = req.headers.authorization;
 
-  if (securityInfo) {
-    res.status(200).json(securityInfo);
+  if (!header) {
+    return res.status(401).send('Unauthorized - Token is missing');
+  }
+
+  const token = header.split(' ')[1];
+
+  // Perform token verification (add your token verification logic here)
+  // Example: Assume the token is valid, proceed with retrieving host contact
+
+  const { passIdentifier } = req.query;
+  const hostInfo = await getHostContact(client, passIdentifier);
+
+  if (hostInfo) {
+    res.status(200).json(hostInfo);
   } else {
-    res.status(404).send('Visitor pass not found or security information not available');
+    res.status(404).send('Visitor pass not found or host information not available');
   }
 });
 
-// Function to get security information by issuedBy (assuming it's the username)
-async function getSecurityInfo(client, issuedBy) {
-  const securityInfo = await client
-    .db('assignment')  // Ensure the correct database name is used
-    .collection('Security')
-    .findOne({ username: issuedBy });  // Assuming issuedBy corresponds to the security username
+// Function to get host information by issuedBy (assuming it's the username)
+async function getHostInfo(client, issuedBy) {
+  const hostInfo = await client
+    .db('assignment')
+    .collection('Host')
+    .findOne({ username: issuedBy });  // Assuming issuedBy corresponds to the host username
 
-  return securityInfo;
+  return hostInfo;
 }
 
-
-// Function to get security contact by visitor pass ID
-async function getSecurityContact(client, passIdentifier) {
+// Function to get host contact by visitor pass ID
+async function getHostContact(client, passIdentifier) {
   try {
     const visitorPass = await client
       .db('assignment')
@@ -405,29 +415,27 @@ async function getSecurityContact(client, passIdentifier) {
       .findOne({ passIdentifier });
 
     if (visitorPass && visitorPass.issuedBy) {
-      // Assuming the security personnel's name is stored in the `issuedBy` field
-      const securityInfo = await client
-        .db('assignment')
-        .collection('Security')
-        .findOne({ username: visitorPass.issuedBy });
+      // Assuming the host's name is stored in the `issuedBy` field
+      const hostInfo = await getHostInfo(client, visitorPass.issuedBy);
 
-      if (securityInfo && securityInfo.phoneNumber) {
+      if (hostInfo && hostInfo.phoneNumber) {
         return {
-          securityName: securityInfo.username,
-          contactNumber: securityInfo.phoneNumber,
+          hostName: hostInfo.username,
+          contactNumber: hostInfo.phoneNumber,
         };
       } else {
-        console.error('Security information not found or missing phoneNumber field.');
+        console.error('Host information not found or missing phoneNumber field.');
       }
     } else {
       console.error('Visitor pass not found or missing issuedBy field.');
     }
   } catch (error) {
-    console.error('Error fetching security information:', error);
+    console.error('Error fetching host information:', error);
   }
 
   return null;
 }
+
 
 
 /**
