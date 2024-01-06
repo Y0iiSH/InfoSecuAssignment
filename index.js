@@ -257,9 +257,10 @@ app.get('/readAllData', verifyAdminToken, async (req, res) => {
 async function readAllData(client) {
   const admins = await client.db('assignment').collection('Admin').find().toArray();
   const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
+  const host = await client.db('assignment').collection('Host').find().toArray();
   const records = await client.db('assignment').collection('Records').find().toArray();
 
-  return { admins, securityPersonnel, visitors, records };
+  return { admins, securityPersonnel, host, records };
 }
 
 // Middleware to verify admin token
