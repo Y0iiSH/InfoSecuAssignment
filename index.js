@@ -150,13 +150,12 @@ async function run() {
     res.send(await login(client, data));
   });
 
-
-/**
+  /**
  * @swagger
  * /readAllData:
  *   get:
- *     summary: Read all data from the database
- *     description: Get all data from the database (requires admin token)
+ *     summary: Read all data from the assignment database (requires admin token)
+ *     description: Get all data from the assignment database (requires admin token)
  *     tags:
  *       - Admin
  *     security:
@@ -208,7 +207,7 @@ async function run() {
  *                         description: List of visitors associated with the security personnel
  *                         items:
  *                           type: string
- *                 host:
+ *              host:
  *                   type: array
  *                   description: List of host details
  *                   items:
@@ -276,6 +275,10 @@ app.get('/readAllData', async (req, res) => {
     res.status(401).send('Invalid or expired token');
   }
 });
+
+
+
+
 
 /**
  * @swagger
