@@ -349,7 +349,7 @@ async function deleteUser(client, icNumber, role) {
 
 
 
-   /**
+ /**
  * @swagger
  * /registerSecurity:
  *   post:
@@ -377,6 +377,8 @@ async function deleteUser(client, icNumber, role) {
  *                 format: email
  *               phoneNumber:
  *                 type: string
+ *               icNumber:
+ *                 type: string
  *               role:
  *                 type: string
  *                 enum:
@@ -387,6 +389,7 @@ async function deleteUser(client, icNumber, role) {
  *               - name
  *               - email
  *               - phoneNumber
+ *               - icNumber
  *               - role
  *     responses:
  *       '200':
@@ -398,11 +401,12 @@ async function deleteUser(client, icNumber, role) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-   app.post('/registerSecurity', verifyToken, async (req, res) => {
-    let data = req.user;
-    let mydata = req.body;
-    res.send(await register(client, data, mydata));
-  });
+app.post('/registerSecurity', verifyToken, async (req, res) => {
+  let data = req.user;
+  let mydata = req.body;
+  res.send(await register(client, data, mydata));
+});
+
 
  /**
  * @swagger
