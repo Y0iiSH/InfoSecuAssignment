@@ -151,109 +151,49 @@ async function run() {
   });
 
 
- /**
+  /**
  * @swagger
- * /showAllData:
+ * /readAdmin:
  *   get:
- *     summary: Read all data from the database
- *     description: Get all data from the database (requires admin token)
+ *     summary: Read admin details
+ *     description: Get details of the logged-in admin
  *     tags:
  *       - Admin
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: All data retrieved successfully
+ *         description: Admin details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 admins:
- *                   type: array
- *                   description: List of admin details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                 securityPersonnel:
- *                   type: array
- *                   description: List of security personnel details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                       visitors:
- *                         type: array
- *                         description: List of visitors associated with the security personnel
- *                         items:
- *                           type: string
- *                 host:
- *                   type: array
- *                   description: List of host details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       password:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       icNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                 records:
- *                   type: array
- *                   description: List of all records
- *                   items:
- *                     type: object
- *                     properties:
- *                       recordID:
- *                         type: string
- *                       username:
- *                         type: string
- *                       purpose:
- *                         type: string
- *                       checkInTime:
- *                         type: string
- *                       checkOutTime:
- *                         type: string
- *     responses:
+ *                 username:
+ *                   type: string
+ *                   description: Username of the admin
+ *                 name:
+ *                   type: string
+ *                   description: Name of the admin
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                   description: Email of the admin
+ *                 phoneNumber:
+ *                   type: string
+ *                   description: Phone number of the admin
+ *                 role:
+ *                   type: string
+ *                   description: Role of the admin
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
 
- app.get('/showAlldata', verifyToken, async (req, res) => {
-  let data = req.user;
-  res.send(await read(client, data));
-});
+  app.get('/readAdmin', verifyToken, async (req, res) => {
+    let data = req.user;
+    res.send(await read(client, data));
+  });
+
 
 
 
@@ -1098,7 +1038,7 @@ async function read(client, data) {
   if (data.role == 'Admin') {
     const Admins = await client.db('assignment').collection('Admin').find({ role: 'Admin' }).next();
     const Securitys = await client.db('assignment').collection('Security').find({ role: 'Security' }).toArray();
-    const Host = await client.db('assignment').collection(' Host').toArray();
+    const Host = await client.db('assignment').collection('Host').toArray();
     const Records = await client.db('assignment').collection('Records').find().toArray();
 
     return { Admins, Securitys, Host, Records };
