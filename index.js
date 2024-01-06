@@ -822,7 +822,7 @@ function generateUniquePassIdentifier() {
  *     summary: Register a new host
  *     description: Register a new host with required details
  *     tags:
- *       - Security
+ *       - Host
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -848,7 +848,7 @@ function generateUniquePassIdentifier() {
  *               role:
  *                 type: string
  *                 enum:
- *                   - host
+ *                   - Host
  *             required:
  *               - username
  *               - password
