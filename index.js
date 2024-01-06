@@ -1021,101 +1021,54 @@ app.post('/loginHost', async (req, res) => {
 
 /**
  * @swagger
- * /hostSeeAllVisitors:
+ * /readVisitor:
  *   get:
- *     summary: View all visitor details for a host
- *     description: Retrieve all visitor records for a host with specific details
+ *     summary: Read visitor
+ *     description: Get details of the logged-in visitor
  *     tags:
  *       - Host
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         description: Host token (Bearer)
- *         required: true
- *         type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: Successfully retrieved all visitor details
+ *         description: Visitors details retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   icNumber:
- *                     type: string
- *                   passIdentifier:
- *                     type: string
- *                   name:
- *                     type: string
- *                   company:
- *                     type: string
- *                   vehicleNumber:
- *                     type: string
- *                   purpose:
- *                     type: string
- *                   checkInTime:
- *                     type: string
- *                   issuedBy:
- *                     type: string
+ *               type: object
+ *               properties:
+ *                 icNumber:
+ *                   type: string
+ *                   description: IC Number of the visitor
+ *                 passIdentifier:
+ *                   type: string
+ *                   description: Pass Identifier of the visitor
+ *                 name:
+ *                   type: string
+ *                   description: Name of the visitor
+ *                 company:
+ *                   type: string
+ *                   description: Company of the visitor
+ *                 vehicleNumber:
+ *                   type: string
+ *                   description: Vehicle Number of the visitor
+ *                 purpose:
+ *                   type: string
+ *                   description: Purpose of the visit
+ *                 checkInTime:
+ *                   type: string
+ *                   description: Check-in time of the visit
+ *                 issuedBy:
+ *                   type: string
+ *                   description: Issued by (Host) of the visitor pass
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
- *       '500':
- *         description: Internal Server Error
  */
 
-app.get('/hostSeeAllVisitors', async (req, res) => {
-  try {
-    const header = req.headers.authorization;
-
-    if (!header) {
-      return res.status(401).send('Unauthorized');
-    }
-
-    const token = header.split(' ')[1];
-
-    jwt.verify(token, 'yourHostTokenSecret', async function (err, decoded) {
-      if (err || decoded.role !== 'host') {
-        console.error(err);
-        return res.status(401).send('Invalid or insufficient host token');
-      }
-
-      const hostData = decoded; // Details of the host from the token
-
-      // Retrieve all visitor details for the host
-      const visitorDetails = await getAllVisitorDetailsForHost(client, hostData);
-
-      res.status(200).json(visitorDetails);
-    });
-  } catch (error) {
-    console.error('Error retrieving visitor details:', error);
-    res.status(500).send('Internal Server Error');
-  }
+app.get('/readVisitor', verifyToken, async (req, res) => {
+  let data = req.user;
+  res.send(await read(client, data));
 });
-
-// Function to retrieve all visitor details for a host
-async function getAllVisitorDetailsForHost(client, hostData) {
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  // Retrieve all records where the host is the issuer
-  const records = await recordsCollection
-    .find({ issuedBy: hostData.username })
-    .project({
-      icNumber: 1,
-      passIdentifier: 1,
-      name: 1,
-      company: 1,
-      vehicleNumber: 1,
-      purpose: 1,
-      checkInTime: 1,
-      issuedBy: 1,
-      _id: 0, // Exclude the _id field
-    })
-    .toArray();
-
-  return records;
-}
 
 
 
