@@ -767,57 +767,6 @@ function generateUniquePassIdentifier() {
 
 
 
-
-
-  /**
- * @swagger
- * /readAdmin:
- *   get:
- *     summary: Read admin details
- *     description: Get details of the logged-in admin
- *     tags:
- *       - Admin
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Admin details retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 username:
- *                   type: string
- *                   description: Username of the admin
- *                 name:
- *                   type: string
- *                   description: Name of the admin
- *                 email:
- *                   type: string
- *                   format: email
- *                   description: Email of the admin
- *                 phoneNumber:
- *                   type: string
- *                   description: Phone number of the admin
- *                 role:
- *                   type: string
- *                   description: Role of the admin
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-
-  app.get('/readAdmin', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
-  });
-
- 
- 
-
-
-
-
 /**
  * @swagger
  * /registerHost:
