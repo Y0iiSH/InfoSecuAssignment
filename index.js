@@ -304,9 +304,12 @@ function verifyAdminToken(req, res, next) {
  *       - in: query
  *         name: role
  *         required: true
- *         description: Role of the user to be deleted (Visitor or Security)
+ *         description: Role of the user to be deleted (visitor or security)
  *         schema:
  *           type: string
+ *           enum:
+ *             - visitor
+ *             - security
  *     responses:
  *       '200':
  *         description: User deleted successfully
@@ -314,6 +317,8 @@ function verifyAdminToken(req, res, next) {
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
  *         description: User not found
+ *       '500':
+ *         description: Internal Server Error
  */
 app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
   const { icNumber, role } = req.query;
