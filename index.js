@@ -1019,53 +1019,105 @@ app.post('/loginHost', async (req, res) => {
   res.send(await login(client, data));
 });
 
-  /**
+/**
  * @swagger
- * /readSecurity:
+ * /hostSeeAllVisitors:
  *   get:
- *     summary: Read security personnel details
- *     description: Get details of the logged-in security personnel
+ *     summary: View all visitor details for a host
+ *     description: Retrieve all visitor records for a host with specific details
  *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
+ *       - Host
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         description: Host token (Bearer)
+ *         required: true
+ *         type: string
  *     responses:
  *       '200':
- *         description: Security personnel details retrieved successfully
+ *         description: Successfully retrieved all visitor details
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 username:
- *                   type: string
- *                   description: Username of the security personnel
- *                 name:
- *                   type: string
- *                   description: Name of the security personnel
- *                 email:
- *                   type: string
- *                   format: email
- *                   description: Email of the security personnel
- *                 phoneNumber:
- *                   type: string
- *                   description: Phone number of the security personnel
- *                 role:
- *                   type: string
- *                   description: Role of the security personnel
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   icNumber:
+ *                     type: string
+ *                   passIdentifier:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   company:
+ *                     type: string
+ *                   vehicleNumber:
+ *                     type: string
+ *                   purpose:
+ *                     type: string
+ *                   checkInTime:
+ *                     type: string
+ *                   issuedBy:
+ *                     type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
+ *       '500':
+ *         description: Internal Server Error
  */
-  app.get('/readSecurity', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
-  });
+
+app.get('/hostSeeAllVisitors', async (req, res) => {
+  try {
+    const header = req.headers.authorization;
+
+    if (!header) {
+      return res.status(401).send('Unauthorized');
+    }
+
+    const token = header.split(' ')[1];
+
+    jwt.verify(token, 'yourHostTokenSecret', async function (err, decoded) {
+      if (err || decoded.role !== 'host') {
+        console.error(err);
+        return res.status(401).send('Invalid or insufficient host token');
+      }
+
+      const hostData = decoded; // Details of the host from the token
+
+      // Retrieve all visitor details for the host
+      const visitorDetails = await getAllVisitorDetailsForHost(client, hostData);
+
+      res.status(200).json(visitorDetails);
+    });
+  } catch (error) {
+    console.error('Error retrieving visitor details:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Function to retrieve all visitor details for a host
+async function getAllVisitorDetailsForHost(client, hostData) {
+  const recordsCollection = client.db('assignment').collection('Records');
+
+  // Retrieve all records where the host is the issuer
+  const records = await recordsCollection
+    .find({ issuedBy: hostData.username })
+    .project({
+      icNumber: 1,
+      passIdentifier: 1,
+      name: 1,
+      company: 1,
+      vehicleNumber: 1,
+      purpose: 1,
+      checkInTime: 1,
+      issuedBy: 1,
+      _id: 0, // Exclude the _id field
+    })
+    .toArray();
+
+  return records;
+}
 
 
-
-
- 
- 
 
 }
 
@@ -1260,7 +1312,11 @@ async function read(client, data) {
 
     return { Security, Visitors, Records };
   }
+  if (data.role == 'Host') {
+    const Records = await client.db('assignment').collection('Records').find().toArray();
 
+    return { Records };
+  }
   if (data.role == 'Visitor') {
     const Visitor = await client.db('assignment').collection('Users').findOne({ username: data.username });
     if (!Visitor) {
