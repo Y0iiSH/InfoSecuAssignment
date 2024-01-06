@@ -929,6 +929,9 @@ async function createHost(client, hostData) {
  *         description: Internal Server Error
  */
 
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 app.post('/loginHost', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -941,7 +944,7 @@ app.post('/loginHost', async (req, res) => {
       const passwordMatch = await bcrypt.compare(password, host.password);
 
       if (passwordMatch) {
-        // Generate a token upon successful login
+        // Password matches, generate a token and send it in the response
         const token = jwt.sign({ username: host.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
         res.status(200).json({ token });
       } else {
@@ -962,6 +965,7 @@ app.post('/loginHost', async (req, res) => {
 async function findHostByUsername(client, username) {
   return await client.db('assignment').collection('Host').findOne({ username });
 }
+
 
 
   /**
