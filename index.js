@@ -150,6 +150,7 @@ async function run() {
     res.send(await login(client, data));
   });
 
+
 /**
  * @swagger
  * /readAllData:
@@ -207,13 +208,15 @@ async function run() {
  *                         description: List of visitors associated with the security personnel
  *                         items:
  *                           type: string
- *                 visitors:
+ *                 host:
  *                   type: array
- *                   description: List of visitor details
+ *                   description: List of host details
  *                   items:
  *                     type: object
  *                     properties:
  *                       username:
+ *                         type: string
+ *                       password:
  *                         type: string
  *                       name:
  *                         type: string
@@ -222,13 +225,10 @@ async function run() {
  *                         format: email
  *                       phoneNumber:
  *                         type: string
+ *                       icNumber:
+ *                         type: string
  *                       role:
  *                         type: string
- *                       records:
- *                         type: array
- *                         description: List of records associated with the visitor
- *                         items:
- *                           type: string
  *                 records:
  *                   type: array
  *                   description: List of all records
@@ -249,22 +249,7 @@ async function run() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-app.get('/readAllData', verifyAdminToken, async (req, res) => {
-  res.send(await readAllData(client));
-});
-
-// Function to read all data from the database
-async function readAllData(client) {
-  const admins = await client.db('assignment').collection('Admin').find().toArray();
-  const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
-  const host = await client.db('assignment').collection('Host').find().toArray();
-  const records = await client.db('assignment').collection('Records').find().toArray();
-
-  return { admins, securityPersonnel, host, records };
-}
-
-// Middleware to verify admin token
-function verifyAdminToken(req, res, next) {
+app.get('/readAllData', async (req, res) => {
   const header = req.headers.authorization;
 
   if (!header) {
@@ -273,16 +258,24 @@ function verifyAdminToken(req, res, next) {
 
   const token = header.split(' ')[1];
 
-  jwt.verify(token, 'dinpassword', function(err, decoded) {
-    if (err || decoded.role !== 'Admin') {
+  try {
+    const decoded = jwt.verify(token, 'mirulidham');
+    if (decoded.role !== 'Admin') {
       console.error(err);
       return res.status(401).send('Invalid or insufficient admin token');
     }
 
-    req.user = decoded;
-    next();
-  });
-}
+    const admins = await client.db('assignment').collection('Admin').find().toArray();
+    const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
+    const host = await client.db('assignment').collection('Host').find().toArray();
+    const records = await client.db('assignment').collection('Records').find().toArray();
+
+    res.send({ admins, securityPersonnel, host, records });
+  } catch (err) {
+    console.error(err);
+    res.status(401).send('Invalid or expired token');
+  }
+});
 
 /**
  * @swagger
@@ -629,6 +622,127 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
   return passInfo;
 }
 
+
+
+
+/**
+ * @swagger
+ * /registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with required details
+ *     tags:
+ *       - Host
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phoneNumber:
+ *                 type: string
+ *               icNumber:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - Host
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *               - icNumber
+ *               - role
+ *     responses:
+ *       '200':
+ *         description: Host registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/registerHost', verifyToken, async (req, res) => {
+  let data = req.user;
+  let mydata = req.body;
+  res.send(await registerHost(client, data, mydata));
+});
+
+async function registerHost(client, data, mydata) {
+  const result = await client
+    .db('assignment')
+    .collection('Host')
+    .insertOne({
+      username: mydata.username,
+      password: mydata.password,
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      role: mydata.role,
+    });
+
+  return 'Host registration successful';
+}
+
+
+
+/**
+ * @swagger
+ * /loginHost:
+ *   post:
+ *     summary: Log in as host
+ *     description: Log in as host 
+ *     tags:
+ *       - Host
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Host login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in host personnel
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
+app.post('/loginHost', async (req, res) => {
+  let data = req.body;
+  res.send(await login(client, data));
+});
+
 /**
  * @swagger
  * /issueVisitorPass:
@@ -765,126 +879,6 @@ function generateUniquePassIdentifier() {
 }
 
 
-
-
-/**
- * @swagger
- * /registerHost:
- *   post:
- *     summary: Register a new host
- *     description: Register a new host with required details
- *     tags:
- *       - Host
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phoneNumber:
- *                 type: string
- *               icNumber:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum:
- *                   - Host
- *             required:
- *               - username
- *               - password
- *               - name
- *               - email
- *               - phoneNumber
- *               - icNumber
- *               - role
- *     responses:
- *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-app.post('/registerHost', verifyToken, async (req, res) => {
-  let data = req.user;
-  let mydata = req.body;
-  res.send(await registerHost(client, data, mydata));
-});
-
-async function registerHost(client, data, mydata) {
-  const result = await client
-    .db('assignment')
-    .collection('Host')
-    .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,  // Ensure icNumber is included
-      role: mydata.role,
-    });
-
-  return 'Host registration successful';
-}
-
-
-
-/**
- * @swagger
- * /loginHost:
- *   post:
- *     summary: Log in as host
- *     description: Log in as host 
- *     tags:
- *       - Host
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *     responses:
- *       '200':
- *         description: Host login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Authentication token for the logged-in host personnel
- *       '401':
- *         description: Unauthorized - Invalid credentials
- */
-app.post('/loginHost', async (req, res) => {
-  let data = req.body;
-  res.send(await login(client, data));
-});
-
 /**
  * @swagger
  * /readVisitor:
@@ -954,7 +948,7 @@ run().catch(console.error);
 function generateToken(userProfile){
   return jwt.sign(
   userProfile,    //this is an obj
-  'dinpassword',           //password
+  'mirulidham',           //password
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
@@ -1234,7 +1228,7 @@ function verifyToken(req, res, next) {
 
   let token = header.split(' ')[1];
 
-  jwt.verify(token, 'dinpassword', function(err, decoded) {
+  jwt.verify(token, 'mirulidham', function(err, decoded) {
     if (err) {
       console.error(err);
       return res.status(401).send('Invalid token');
