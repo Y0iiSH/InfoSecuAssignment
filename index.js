@@ -515,12 +515,15 @@ async function getSecurityContact(client, passIdentifier) {
 
 
 
-  /**
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+/**
  * @swagger
- * /loginSecurity:
+ * /loginHost:
  *   post:
- *     summary: Log in as security personnel
- *     description: Log in as security personnel with valid credentials
+ *     summary: Log in as a host
+ *     description: Log in as a host with valid credentials
  *     tags:
  *       - Security
  *     requestBody:
@@ -539,7 +542,7 @@ async function getSecurityContact(client, passIdentifier) {
  *               - password
  *     responses:
  *       '200':
- *         description: Security personnel login successful
+ *         description: Host login successful
  *         content:
  *           application/json:
  *             schema:
@@ -547,14 +550,38 @@ async function getSecurityContact(client, passIdentifier) {
  *               properties:
  *                 token:
  *                   type: string
- *                   description: Authentication token for the logged-in security personnel
+ *                   description: Authentication token for the logged-in host
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-  app.post('/loginSecurity', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
+app.post('/loginHost', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Retrieve host data from the database based on the username
+    const hostData = await client.db('assignment').collection('Host').findOne({ username });
+
+    if (!hostData) {
+      return res.status(401).send('Invalid credentials');
+    }
+
+    // Compare the entered password with the hashed password from the database
+    const passwordMatch = await bcrypt.compare(password, hostData.passwordHash);
+
+    if (!passwordMatch) {
+      return res.status(401).send('Invalid credentials');
+    }
+
+    // Create a JWT token for the host
+    const token = jwt.sign({ username: hostData.username, role: 'host' }, 'yourSecretKey', { expiresIn: '1h' });
+
+    res.status(200).json({ token });
+  } catch (error) {
+    console.error('Error during host login:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 
 /**
 /**
