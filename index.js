@@ -1028,7 +1028,7 @@ async function encryptPassword(password) {
 async function login(client, data) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const usersCollection = client.db("assignment").collection("Users");
+  const hostCollection = client.db("assignment").collection("Hosts");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -1039,8 +1039,8 @@ async function login(client, data) {
   }
 
   if (!match) {
-    // Find the regular user
-    match = await usersCollection.findOne({ username: data.username });
+    // Find the regular host
+    match = await hostCollection.findOne({ username: data.username });
   }
 
   if (match) {
