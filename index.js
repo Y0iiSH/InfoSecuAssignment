@@ -576,26 +576,21 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-app.post('/loginSecurity', async (req, res) => {
-  try {
-    let data = req.body;
-    res.send(await loginSecurity(client, data));
-  } catch (error) {
-    console.error("Error logging in security personnel:", error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-// Function to login security personnel
-async function loginSecurity(client, data) {
+ async function loginSecurity(client, data) {
   const securityCollection = client.db("assignment").collection("Security");
 
   // Find the security user
   const match = await securityCollection.findOne({ username: data.username });
 
   if (match) {
+    // Log hashed password for debugging
+    console.log("Stored hashed password:", match.password);
+
     // Compare the provided password with the stored hashed password
     const isPasswordMatch = await comparePassword(data.password, match.password);
+
+    // Log the result of the password comparison for debugging
+    console.log("Password comparison result:", isPasswordMatch);
 
     if (isPasswordMatch) {
       // Generate a token for the authenticated security personnel
@@ -612,17 +607,6 @@ async function loginSecurity(client, data) {
   }
 }
 
-// Assuming you have the comparePassword and generateToken functions implemented
-// ...
-
-// Example comparePassword and generateToken functions:
-async function comparePassword(providedPassword, hashedPassword) {
-  // Implement your password comparison logic, e.g., using bcrypt
-}
-
-function generateToken(user) {
-  // Implement your token generation logic, e.g., using a library like jsonwebtoken
-}
 
 /**
 /**
