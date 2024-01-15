@@ -348,12 +348,12 @@ async function deleteUser(client, icNumber, role) {
 
 
 
- /**
+/**
  * @swagger
- * /registerSecurity:
+ * /registerSecurityByAdmin:
  *   post:
- *     summary: Register a new security personnel
- *     description: Register a new security personnel with required details
+ *     summary: Register a new security personnel (Admin only)
+ *     description: Register a new security personnel with required details. Only admins can make this request.
  *     tags:
  *       - Security
  *     security:
@@ -371,24 +371,16 @@ async function deleteUser(client, icNumber, role) {
  *                 type: string
  *               name:
  *                 type: string
- *               email:
- *                 type: string
- *                 format: email
  *               phoneNumber:
- *                 type: string
- *               icNumber:
  *                 type: string
  *               role:
  *                 type: string
- *                 enum:
- *                   - security
+ *                 enum: [Security]
  *             required:
  *               - username
  *               - password
  *               - name
- *               - email
  *               - phoneNumber
- *               - icNumber
  *               - role
  *     responses:
  *       '200':
@@ -398,30 +390,68 @@ async function deleteUser(client, icNumber, role) {
  *             schema:
  *               type: string
  *       '401':
- *         description: Unauthorized - Token is missing or invalid
+ *         description: Unauthorized - Token is missing or invalid or user is not an admin
  */
-app.post('/registerSecurity', verifyToken, async (req, res) => {
-  let data = req.user;
-  let mydata = req.body;
-  res.send(await register(client, data, mydata));
+app.post('/registerSecurityByAdmin', verifyToken, async (req, res) => {
+  try {
+    const user = req.user; // Assuming user information is included in the request
+
+    // Check if the user is an admin
+    if (user && user.role === 'admin') {
+      let data = req.body;
+      res.send(await registerSecurity(client, data));
+    } else {
+      res.status(401).send('Unauthorized - Token is missing or invalid or user is not an admin');
+    }
+  } catch (error) {
+    console.error("Error registering security personnel:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-async function register(client, data, mydata) {
+async function registerSecurity(client, data) {
+  // Perform registration logic, excluding the email property
+  // You can use data.username, data.password, data.name, data.phoneNumber, data.role, etc.
+  // Make sure to hash the password before storing it in the database
+  data.password = await encryptPassword(data.password);
+
+  // Your MongoDB insertion logic here
   const result = await client
     .db('assignment')
     .collection('Security')
     .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,  // Ensure icNumber is included
-      role: mydata.role,
+      username: data.username,
+      password: data.password,
+      name: data.name,
+      phoneNumber: data.phoneNumber,
+      role: data.role,
     });
 
   return 'Security personnel registration successful';
 }
+
+
+async function registerSecurity(client, data) {
+  // Perform registration logic, excluding the email property
+  // You can use data.username, data.password, data.name, data.phoneNumber, data.role, etc.
+  // Make sure to hash the password before storing it in the database
+  data.password = await encryptPassword(data.password);
+
+  // Your MongoDB insertion logic here
+  const result = await client
+    .db('assignment')
+    .collection('Security')
+    .insertOne({
+      username: data.username,
+      password: data.password,
+      name: data.name,
+      phoneNumber: data.phoneNumber,
+      role: data.role,
+    });
+
+  return 'Security personnel registration successful';
+}
+
 
 
  /**
@@ -515,7 +545,7 @@ async function getSecurityContact(client, passIdentifier) {
 
 
 
-  /**
+ /**
  * @swagger
  * /loginSecurity:
  *   post:
@@ -551,10 +581,53 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-  app.post('/loginSecurity', async (req, res) => {
+app.post('/loginSecurity', async (req, res) => {
+  try {
     let data = req.body;
-    res.send(await login(client, data));
-  });
+    res.send(await loginSecurity(client, data));
+  } catch (error) {
+    console.error("Error logging in security personnel:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// Function to login security personnel
+async function loginSecurity(client, data) {
+  const securityCollection = client.db("assignment").collection("Security");
+
+  // Find the security user
+  const match = await securityCollection.findOne({ username: data.username });
+
+  if (match) {
+    // Compare the provided password with the stored hashed password
+    const isPasswordMatch = await comparePassword(data.password, match.password);
+
+    if (isPasswordMatch) {
+      // Generate a token for the authenticated security personnel
+      const token = generateToken(match);
+      return {
+        token: token,
+        message: `Token for ${match.name} generated successfully`,
+      };
+    } else {
+      return "Wrong password";
+    }
+  } else {
+    return "User not found";
+  }
+}
+
+// Assuming you have the comparePassword and generateToken functions implemented
+// ...
+
+// Example comparePassword and generateToken functions:
+async function comparePassword(providedPassword, hashedPassword) {
+  // Implement your password comparison logic, e.g., using bcrypt
+}
+
+function generateToken(user) {
+  // Implement your token generation logic, e.g., using a library like jsonwebtoken
+}
 
 /**
 /**
