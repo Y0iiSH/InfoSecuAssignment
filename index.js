@@ -542,11 +542,11 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-  app.post('/loginSecurity', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
+app.post('/loginSecurity', async (req, res) => {
+  let data = req.body;
+  res.send(await login(client, data));
+});
 
-  });
 
 /**\
 /**
@@ -1162,8 +1162,6 @@ async function register(client, data, mydata) {
 
 
 
-
-
 //Function to read data
 async function read(client, data) {
   if (data.role == 'Admin') {
@@ -1198,58 +1196,6 @@ async function read(client, data) {
     return { Visitor, Records };
   }
 }
-
-
-
-
-
-//Function to check in
-async function checkIn(client, data, mydata) {
-  const usersCollection = client.db('assignment').collection('Users');
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  const currentUser = await usersCollection.findOne({ username: data.username });
-
-  if (!currentUser) {
-    return 'User not found';
-  }
-
-  if (currentUser.currentCheckIn) {
-    return 'Already checked in, please check out first!!!';
-  }
-
-  if (data.role !== 'Visitor') {
-    return 'Only visitors can access check-in.';
-  }
-
-  const existingRecord = await recordsCollection.findOne({ recordID: mydata.recordID });
-
-  if (existingRecord) {
-    return `The recordID '${mydata.recordID}' is already in use. Please enter another recordID.`;
-  }
-
-  const currentCheckInTime = new Date();
-
-  const recordData = {
-    username: data.username,
-    recordID: mydata.recordID,
-    purpose: mydata.purpose,
-    checkInTime: currentCheckInTime
-  };
-
-  await recordsCollection.insertOne(recordData);
-
-  await usersCollection.updateOne(
-    { username: data.username },
-    {
-      $set: { currentCheckIn: mydata.recordID },
-      $push: { records: mydata.recordID }
-    }
-  );
-
-  return `You have checked in at '${currentCheckInTime}' with recordID '${mydata.recordID}'`;
-}
-
 
 
 
