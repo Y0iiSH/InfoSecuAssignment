@@ -400,28 +400,19 @@ async function deleteUser(client, icNumber, role) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-app.post('/registerSecurity', verifyToken, async (req, res) => {
-  let data = req.user;
-  let mydata = req.body;
-  res.send(await register(client, data, mydata));
+ app.post('/registerSecurity', verifyToken, async (req, res) => {
+  try {
+    let data = req.user;
+    let mydata = req.body;
+    
+    const result = await registerSecurity(client, { ...mydata, password: await encryptPassword(mydata.password) });
+    res.status(200).send(result);
+  } catch (error) {
+    console.error("Error registering security personnel:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-async function register(client, data, mydata) {
-  const result = await client
-    .db('assignment')
-    .collection('Security')
-    .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,  // Ensure icNumber is included
-      role: mydata.role,
-    });
-
-  return 'Security personnel registration successful';
-}
 
 
  /**
@@ -1012,6 +1003,25 @@ async function registerAdmin(client, data) {
     return 'Admin registered';
   }
 }
+
+//Function to register securiity
+async function registerSecurity(client, data) {
+  data.password = await encryptPassword(data.password);
+  
+  const existingUser = await client.db("assignment").collection("Security").findOne({ username: data.username });
+  if (existingUser) {
+    return 'Username already registered';
+  } else {
+    const result = await client.db("assignment").collection("Security").insertOne(data);
+    return 'Security personnel registered';
+  }
+}
+
+async function encryptPassword(password) {
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
+}
+
 
 
 //Function to login
