@@ -1028,10 +1028,11 @@ async function encryptPassword(password) {
 
 
 //Function to login
+//Function to login
 async function login(client, data) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const hostCollection = client.db("assignment").collection("Host");
+  const usersCollection = client.db("assignment").collection("Users");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -1042,31 +1043,28 @@ async function login(client, data) {
   }
 
   if (!match) {
-    // Find the regular host
-    match = await hostCollection.findOne({ username: data.username });
+    // Find the regular user
+    match = await usersCollection.findOne({ username: data.username });
   }
 
   if (match) {
-    // Log hashed password for debugging
-    console.log("Stored hashed password:", match.password);
-
-    // Compare the provided password with the stored hashed password
-    const isPasswordMatch = await comparePassword(data.password, match.password);
-
-    // Log the result of the password comparison for debugging
-    console.log("Password comparison result:", isPasswordMatch);
+    // Compare the provided password with the stored password
+    const isPasswordMatch = await decryptPassword(data.password, match.password);
 
     if (isPasswordMatch) {
+      console.clear(); // Clear the console
       const token = generateToken(match);
       console.log(output(match.role));
       return "\nToken for " + match.name + ": " + token;
-    } else {
+    }
+     else {
       return "Wrong password";
     }
   } else {
     return "User not found";
   }
 }
+
 
 
 
