@@ -678,7 +678,7 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *         description: Unauthorized - Token is missing or invalid
  */
 
-app.post('/registerSecurity', verifyToken, async (req, res) => {
+app.post('/registerHost', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
   res.send(await register(client, data, mydata));
