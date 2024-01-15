@@ -657,9 +657,9 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *               phoneNumber:
  *                 type: string
  *               role:
- *                 type: string
- *                 enum:
- *                   - host
+ *                 type: host
+ *              
+ *                   
  *             required:
  *               - username
  *               - password
@@ -677,27 +677,12 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-app.post('/registerHost', verifyToken, async (req, res) => {
+app.post('/registerSecurity', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
-  res.send(await registerHost(client, data, mydata));
+  res.send(await register(client, data, mydata));
 });
 
-async function registerHost(client, data, mydata) {
-  const result = await client
-    .db('assignment')
-    .collection('Hosts')
-    .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      role: mydata.role,
-    });
-
-  return 'Host registration successful';
-}
 
 /**
  * @swagger
@@ -1085,13 +1070,14 @@ async function decryptPassword(password, compare) {
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
+  const hostCollection = client.db("assignment").collection("Hosts");
   
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  
+  const tempHost = await hostCollection.findOne({ username: mydata.username });
 
-  if (tempAdmin || tempSecurity || tempUser) {
+  if (tempAdmin || tempSecurity || tempHost) {
     return "Username already in use, please enter another username";
   }
 
@@ -1131,6 +1117,29 @@ async function register(client, data, mydata) {
     );
 
     return "Visitor registered successfully";
+  }
+
+  if (data.role === "Security") {
+    const result = await hostCollection.insertOne({
+      username: mydata.username,
+      password: await encryptPassword(mydata.password),
+      name: mydata.name,
+      email: mydata.email,
+      
+      Security: data.username,
+      company: mydata.company,
+      vehicleNumber: mydata.vehicleNumber,
+      icNumber: mydata.icNumber,
+      phoneNumber: mydata.phoneNumber,
+      role: "Host",
+    });
+
+    const updateResult = await hostCollection.updateOne(
+      { username: data.username },
+      { $push: { host: mydata.username } }
+    );
+
+    return "Host registered successfully";
   }
 }
 
