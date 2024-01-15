@@ -545,6 +545,7 @@ async function getSecurityContact(client, passIdentifier) {
   app.post('/loginSecurity', async (req, res) => {
     let data = req.body;
     res.send(await login(client, data));
+
   });
 
 /**\
@@ -1044,21 +1045,23 @@ async function login(client, data) {
   }
 
   if (match) {
-    // Compare the provided password with the stored password
-    const isPasswordMatch = await decryptPassword(data.password, match.password);
+    // Compare the provided password with the stored hashed password
+    const isPasswordMatch = await comparePassword(data.password, match.password);
 
     if (isPasswordMatch) {
-      console.clear(); // Clear the console
       const token = generateToken(match);
       console.log(output(match.role));
       return "\nToken for " + match.name + ": " + token;
-    }
-     else {
+    } else {
       return "Wrong password";
     }
   } else {
     return "User not found";
   }
+}
+
+async function comparePassword(providedPassword, hashedPassword) {
+  return bcrypt.compare(providedPassword, hashedPassword);
 }
 
 
