@@ -400,11 +400,28 @@ async function deleteUser(client, icNumber, role) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
- app.post('/registerSecurity', async (req, res) => {
-  let data = req.body;
-  res.send(await registerSecurity(client, data));
+app.post('/registerSecurity', verifyToken, async (req, res) => {
+  let data = req.user;
+  let mydata = req.body;
+  res.send(await register(client, data, mydata));
 });
 
+async function register(client, data, mydata) {
+  const result = await client
+    .db('assignment')
+    .collection('Security')
+    .insertOne({
+      username: mydata.username,
+      password: mydata.password,
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      role: mydata.role,
+    });
+
+  return 'Security personnel registration successful';
+}
 
 
  /**
@@ -540,9 +557,6 @@ async function getSecurityContact(client, passIdentifier) {
   });
 
 /**
-
-
-/**\
 /**
  * @swagger
  * /retrieveVisitorPass:
@@ -613,132 +627,6 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
 
   return passInfo;
 }
-
-/**
- * @swagger
- * /registerHost:
- *   post:
- *     summary: Register a new host
- *     description: Register a new host with required details
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phoneNumber:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum:
- *                   - host
- *             required:
- *               - username
- *               - password
- *               - name
- *               - email
- *               - phoneNumber
- *               - role
- *     responses:
- *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-
-app.post('/registerHost', verifyToken, async (req, res) => {
-  let data = req.user;
-  let mydata = req.body;
-  res.send(await register(client, data, mydata));
-});
-
-
-/**
- * @swagger
- * /test/registerHost:
- *   post:
- *     summary: Register a new host without security approval
- *     description: Register a new host with required details, no security approval required
- *     tags:
- *       - Test
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               email:
- *                 type: string
- *                 format: email
- *               phoneNumber:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum:
- *                   - host
- *             required:
- *               - username
- *               - password
- *               - name
- *               - email
- *               - phoneNumber
- *               - role
- *     responses:
- *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- */
-app.post('/test/registerHost', async (req, res) => {
-  let mydata = req.body;
-  res.send(await registerHost(client, mydata));
-});
-
-async function registerHost(client, mydata) {
-  const result = await client
-    .db('assignment')
-    .collection('TestHost') // Updated collection name to TestHost
-    .insertOne({
-      username: mydata.username,
-      password: mydata.password,
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      role: mydata.role,
-    });
-
-  return 'Host registration successful';
-}
-
-
-
 
 /**
  * @swagger
@@ -999,25 +887,6 @@ async function registerAdmin(client, data) {
   }
 }
 
-//Function to register securiity
-async function registerSecurity(client, data) {
-  data.password = await encryptPassword(data.password);
-  
-  const existingUser = await client.db("assignment").collection("Security").findOne({ username: data.username });
-  if (existingUser) {
-    return 'Username already registered';
-  } else {
-    const result = await client.db("assignment").collection("Security").insertOne(data);
-    return 'Security personnel registered';
-  }
-}
-
-async function encryptPassword(password) {
-  const saltRounds = 10;
-  return bcrypt.hash(password, saltRounds);
-}
-
-
 
 //Function to login
 async function login(client, data) {
@@ -1058,8 +927,6 @@ async function login(client, data) {
 
 
 
-
-
 //Function to encrypt password
 async function encryptPassword(password) {
   const hash = await bcrypt.hash(password, saltRounds); 
@@ -1078,14 +945,13 @@ async function decryptPassword(password, compare) {
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const hostCollection = client.db("assignment").collection("Host");
   
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  const tempHost = await hostCollection.findOne({ username: mydata.username });
+  
 
-  if (tempAdmin || tempSecurity || tempHost) {
+  if (tempAdmin || tempSecurity || tempUser) {
     return "Username already in use, please enter another username";
   }
 
@@ -1126,30 +992,9 @@ async function register(client, data, mydata) {
 
     return "Visitor registered successfully";
   }
-
-  if (data.role === "Security") {
-    const result = await hostCollection.insertOne({
-      username: mydata.username,
-      password: await encryptPassword(mydata.password),
-      name: mydata.name,
-      email: mydata.email,
-      
-      Security: data.username,
-      company: mydata.company,
-      vehicleNumber: mydata.vehicleNumber,
-      icNumber: mydata.icNumber,
-      phoneNumber: mydata.phoneNumber,
-      role: "Host",
-    });
-
-    const updateResult = await hostCollection.updateOne(
-      { username: data.username },
-      { $push: { host: mydata.username } }
-    );
-
-    return "Host registered successfully";
-  }
 }
+
+
 
 
 
@@ -1187,6 +1032,12 @@ async function read(client, data) {
     return { Visitor, Records };
   }
 }
+
+
+
+
+
+
 
 
 
