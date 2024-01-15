@@ -348,12 +348,12 @@ async function deleteUser(client, icNumber, role) {
 
 
 
-/**
+ /**
  * @swagger
- * /registerSecurityByAdmin:
+ * /registerSecurity:
  *   post:
- *     summary: Register a new security personnel (Admin only)
- *     description: Register a new security personnel with required details. Only admins can make this request.
+ *     summary: Register a new security personnel
+ *     description: Register a new security personnel with required details
  *     tags:
  *       - Security
  *     security:
@@ -371,16 +371,24 @@ async function deleteUser(client, icNumber, role) {
  *                 type: string
  *               name:
  *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
  *               phoneNumber:
+ *                 type: string
+ *               icNumber:
  *                 type: string
  *               role:
  *                 type: string
- *                 enum: [Security]
+ *                 enum:
+ *                   - security
  *             required:
  *               - username
  *               - password
  *               - name
+ *               - email
  *               - phoneNumber
+ *               - icNumber
  *               - role
  *     responses:
  *       '200':
@@ -390,63 +398,30 @@ async function deleteUser(client, icNumber, role) {
  *             schema:
  *               type: string
  *       '401':
- *         description: Unauthorized - Token is missing or invalid or user is not an admin
+ *         description: Unauthorized - Token is missing or invalid
  */
-app.post('/registerSecurityByAdmin', verifyToken, async (req, res) => {
-  try {
-    const admin = req.admin; // Assuming admin information is included in the request
-
-    // Check if the admin is an admin
-    if (admin && admin.role === 'admin') {
-      let data = req.body;
-      res.send(await registerSecurity(client, data));
-    } else {
-      res.status(401).send('Unauthorized - Token is missing or invalid or user is not an admin');
-    }
-  } catch (error) {
-    console.error("Error registering security personnel:", error);
-    res.status(500).send("Internal Server Error");
-  }
+app.post('/registerSecurity', verifyToken, async (req, res) => {
+  let data = req.user;
+  let mydata = req.body;
+  res.send(await register(client, data, mydata));
 });
 
-// Assuming the token verification middleware sets req.admin
-function verifyToken(req, res, next) {
-  // Implement your token verification logic here
-  // Set req.admin if the token is valid and user is an admin
-  // Replace the following line with your actual implementation
-  const isAdmin = true;
-
-  if (isAdmin) {
-    req.admin = { role: 'admin' }; // Set admin information in the request
-    next();
-  } else {
-    res.status(401).send('Unauthorized - Token is missing or invalid or user is not an admin');
-  }
-}
-
-
-
-async function registerSecurity(client, data) {
-  // Perform registration logic, excluding the email property
-  // You can use data.username, data.password, data.name, data.phoneNumber, data.role, etc.
-  // Make sure to hash the password before storing it in the database
-  data.password = await encryptPassword(data.password);
-
-  // Your MongoDB insertion logic here
+async function register(client, data, mydata) {
   const result = await client
     .db('assignment')
     .collection('Security')
     .insertOne({
-      username: data.username,
-      password: data.password,
-      name: data.name,
-      phoneNumber: data.phoneNumber,
-      role: data.role,
+      username: mydata.username,
+      password: mydata.password,
+      name: mydata.name,
+      email: mydata.email,
+      phoneNumber: mydata.phoneNumber,
+      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      role: mydata.role,
     });
 
   return 'Security personnel registration successful';
 }
-
 
 
  /**
@@ -540,7 +515,7 @@ async function getSecurityContact(client, passIdentifier) {
 
 
 
- /**
+  /**
  * @swagger
  * /loginSecurity:
  *   post:
@@ -576,37 +551,10 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
- async function loginSecurity(client, data) {
-  const securityCollection = client.db("assignment").collection("Security");
-
-  // Find the security user
-  const match = await securityCollection.findOne({ username: data.username });
-
-  if (match) {
-    // Log hashed password for debugging
-    console.log("Stored hashed password:", match.password);
-
-    // Compare the provided password with the stored hashed password
-    const isPasswordMatch = await comparePassword(data.password, match.password);
-
-    // Log the result of the password comparison for debugging
-    console.log("Password comparison result:", isPasswordMatch);
-
-    if (isPasswordMatch) {
-      // Generate a token for the authenticated security personnel
-      const token = generateToken(match);
-      return {
-        token: token,
-        message: `Token for ${match.name} generated successfully`,
-      };
-    } else {
-      return "Wrong password";
-    }
-  } else {
-    return "User not found";
-  }
-}
-
+  app.post('/loginSecurity', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
 
 /**
 /**
@@ -1089,6 +1037,52 @@ async function read(client, data) {
 
 
 
+//Function to check in
+async function checkIn(client, data, mydata) {
+  const usersCollection = client.db('assignment').collection('Users');
+  const recordsCollection = client.db('assignment').collection('Records');
+
+  const currentUser = await usersCollection.findOne({ username: data.username });
+
+  if (!currentUser) {
+    return 'User not found';
+  }
+
+  if (currentUser.currentCheckIn) {
+    return 'Already checked in, please check out first!!!';
+  }
+
+  if (data.role !== 'Visitor') {
+    return 'Only visitors can access check-in.';
+  }
+
+  const existingRecord = await recordsCollection.findOne({ recordID: mydata.recordID });
+
+  if (existingRecord) {
+    return `The recordID '${mydata.recordID}' is already in use. Please enter another recordID.`;
+  }
+
+  const currentCheckInTime = new Date();
+
+  const recordData = {
+    username: data.username,
+    recordID: mydata.recordID,
+    purpose: mydata.purpose,
+    checkInTime: currentCheckInTime
+  };
+
+  await recordsCollection.insertOne(recordData);
+
+  await usersCollection.updateOne(
+    { username: data.username },
+    {
+      $set: { currentCheckIn: mydata.recordID },
+      $push: { records: mydata.recordID }
+    }
+  );
+
+  return `You have checked in at '${currentCheckInTime}' with recordID '${mydata.recordID}'`;
+}
 
 
 
