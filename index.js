@@ -657,11 +657,9 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *               phoneNumber:
  *                 type: string
  *               role:
- *                 type: 
- *                    enum:
- *                       -host
- *              
- *                   
+ *                 type: string
+ *                 enum:
+ *                   - host
  *             required:
  *               - username
  *               - password
@@ -679,6 +677,7 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
+
 app.post('/registerSecurity', verifyToken, async (req, res) => {
   let data = req.user;
   let mydata = req.body;
