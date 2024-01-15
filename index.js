@@ -400,17 +400,9 @@ async function deleteUser(client, icNumber, role) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
- app.post('/registerSecurity', verifyToken, async (req, res) => {
-  try {
-    let data = req.user;
-    let mydata = req.body;
-    
-    const result = await registerSecurity(client, { ...mydata, password: await encryptPassword(mydata.password) });
-    res.status(200).send(result);
-  } catch (error) {
-    console.error("Error registering security personnel:", error);
-    res.status(500).send("Internal Server Error");
-  }
+ app.post('/registerSecurity', async (req, res) => {
+  let data = req.body;
+  res.send(await registerSecurity(client, data));
 });
 
 
@@ -1027,7 +1019,6 @@ async function encryptPassword(password) {
 
 
 
-//Function to login
 //Function to login
 async function login(client, data) {
   const adminCollection = client.db("assignment").collection("Admin");
