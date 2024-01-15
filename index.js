@@ -657,7 +657,9 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *               phoneNumber:
  *                 type: string
  *               role:
- *                 type: host
+ *                 type: 
+ *                    enum:
+ *                       -host
  *              
  *                   
  *             required:
