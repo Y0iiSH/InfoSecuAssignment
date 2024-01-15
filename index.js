@@ -1029,7 +1029,7 @@ async function encryptPassword(password) {
 async function login(client, data) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const hostCollection = client.db("assignment").collection("Hosts");
+  const hostCollection = client.db("assignment").collection("Host");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -1087,7 +1087,7 @@ async function decryptPassword(password, compare) {
 async function register(client, data, mydata) {
   const adminCollection = client.db("assignment").collection("Admin");
   const securityCollection = client.db("assignment").collection("Security");
-  const hostCollection = client.db("assignment").collection("Hosts");
+  const hostCollection = client.db("assignment").collection("Host");
   
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
