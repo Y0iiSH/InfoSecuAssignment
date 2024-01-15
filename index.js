@@ -1068,6 +1068,7 @@ async function login(client, data) {
 
 
 
+
 //Function to encrypt password
 async function encryptPassword(password) {
   const hash = await bcrypt.hash(password, saltRounds); 
