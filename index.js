@@ -542,10 +542,12 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-app.post('/loginSecurity', async (req, res) => {
-  let data = req.body;
-  res.send(await login(client, data));
-});
+  app.post('/loginSecurity', async (req, res) => {
+    let data = req.body;
+    res.send(await login(client, data));
+  });
+
+/**
 
 
 /**\
