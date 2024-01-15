@@ -394,10 +394,10 @@ async function deleteUser(client, icNumber, role) {
  */
 app.post('/registerSecurityByAdmin', verifyToken, async (req, res) => {
   try {
-    const user = req.user; // Assuming user information is included in the request
+    const admin = req.admin; // Assuming admin information is included in the request
 
-    // Check if the user is an admin
-    if (user && user.role === 'admin') {
+    // Check if the admin is an admin
+    if (admin && admin.role === 'admin') {
       let data = req.body;
       res.send(await registerSecurity(client, data));
     } else {
@@ -409,26 +409,21 @@ app.post('/registerSecurityByAdmin', verifyToken, async (req, res) => {
   }
 });
 
-async function registerSecurity(client, data) {
-  // Perform registration logic, excluding the email property
-  // You can use data.username, data.password, data.name, data.phoneNumber, data.role, etc.
-  // Make sure to hash the password before storing it in the database
-  data.password = await encryptPassword(data.password);
+// Assuming the token verification middleware sets req.admin
+function verifyToken(req, res, next) {
+  // Implement your token verification logic here
+  // Set req.admin if the token is valid and user is an admin
+  // Replace the following line with your actual implementation
+  const isAdmin = true;
 
-  // Your MongoDB insertion logic here
-  const result = await client
-    .db('assignment')
-    .collection('Security')
-    .insertOne({
-      username: data.username,
-      password: data.password,
-      name: data.name,
-      phoneNumber: data.phoneNumber,
-      role: data.role,
-    });
-
-  return 'Security personnel registration successful';
+  if (isAdmin) {
+    req.admin = { role: 'admin' }; // Set admin information in the request
+    next();
+  } else {
+    res.status(401).send('Unauthorized - Token is missing or invalid or user is not an admin');
+  }
 }
+
 
 
 async function registerSecurity(client, data) {
