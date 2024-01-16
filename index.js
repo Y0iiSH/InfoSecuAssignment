@@ -570,23 +570,29 @@ app.post('/loginSecurity', async (req, res) => {
   }
 });
 
-// Function to handle login
 async function loginSecurity(client, data) {
   // Implement your authentication logic here
   // For example, you can query the MongoDB collection to verify credentials
 
   const collectionSecurity = client.db('assignment').collection('Security');
-  const security = await collectionSecurity.findOne({ username: data.username, password: data.password });
+  const security = await collectionSecurity.findOne({ username: data.username });
 
   if (security) {
-    // Authentication successful, generate JWT token
-    const token = generateToken(security);
-    return { token: token };
+    // Compare the provided password with the stored hashed password
+    const passwordMatch = await bcrypt.compare(data.password, security.password);
+
+    if (passwordMatch) {
+      // Authentication successful, generate JWT token
+      const token = generateToken(security);
+      return { token: token };
+    } else {
+      // Password does not match
+      throw new Error('Invalid credentials');
+    }
   } else {
-    // Authentication failed
+    // Username not found
     throw new Error('Invalid credentials');
   }
-
 }
   
 
