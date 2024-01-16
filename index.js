@@ -276,7 +276,7 @@ async function getAllRecords(client) {
  *       '500':
  *         description: Internal Server Error
  */
-app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
+app.delete('/deleteUser', verifyToken, async (req, res) => {
   const { icNumber, role } = req.query;
 
   try {
