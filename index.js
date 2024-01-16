@@ -804,7 +804,68 @@ function generateUniquePassIdentifier() {
 }
 
 
+/**
+ * @swagger
+ * /registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with required details
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               hostName:
+ *                 type: string
+ *               ipAddress:
+ *                 type: string
+ *               port:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *             required:
+ *               - hostName
+ *               - ipAddress
+ *               - port
+ *               - description
+ *     responses:
+ *       '200':
+ *         description: Host registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/registerHost', verifyToken, async (req, res) => {
+  let hostData = req.body;
+  res.send(await registerHost(client, hostData));
+});
 
+// Function to handle host registration
+async function registerHost(client, hostData) {
+  // Implement your logic to handle host registration
+  // For example, insert the host data into the database
+
+  const result = await client
+    .db('assignment')
+    .collection('Hosts')
+    .insertOne({
+      hostName: hostData.hostName,
+      ipAddress: hostData.ipAddress,
+      port: hostData.port,
+      description: hostData.description,
+    });
+
+  return 'Host registration successful';
+}
 
 
   /**
