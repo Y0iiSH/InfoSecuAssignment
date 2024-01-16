@@ -515,7 +515,10 @@ async function getSecurityContact(client, passIdentifier) {
 
 
 
-  /**
+
+
+// Swagger documentation for the new endpoint
+/**
  * @swagger
  * /loginSecurity:
  *   post:
@@ -551,10 +554,35 @@ async function getSecurityContact(client, passIdentifier) {
  *       '401':
  *         description: Unauthorized - Invalid credentials
  */
-  app.post('/loginSecurity', async (req, res) => {
-    let data = req.body;
-    res.send(await login(client, data));
-  });
+
+app.post('/loginSecurity', async (req, res) => {
+  let data = req.body;
+  try {
+    const result = await loginSecurity(client, data);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+ // Function to handle login
+ async function loginSecurity(client, data) {
+  // Implement your authentication logic here
+  // For example, you can query the MongoDB collection to verify credentials
+
+  const db = client.db('assignment');
+  const collection = db.collection('Security');
+
+  const user = await collection.findOne({ username: data.username, password: data.password });
+
+  if (user) {
+    // Authentication successful
+    return { token: 'your_generated_token' };
+  } else {
+    // Authentication failed
+    throw new Error('Invalid credentials');
+  }
+}
 
 /**
 /**
