@@ -800,7 +800,6 @@ function generateUniquePassIdentifier() {
 }
 
 
-// Swagger documentation for the new endpoint
 /**
  * @swagger
  * /registerHost:
@@ -843,6 +842,7 @@ function generateUniquePassIdentifier() {
  */
 app.post('/registerHost', verifyToken, async (req, res) => {
   let hostData = req.body;
+  hostData.role = 'host'; // Add role information
   res.send(await registerHost(client, hostData));
 });
 
@@ -858,10 +858,12 @@ async function registerHost(client, hostData) {
       password: hashedPassword, // Store the hashed password
       name: hostData.name,
       phoneNumber: hostData.phoneNumber,
+      role: hostData.role, // Add the role information
     });
 
   return 'Host registration successful';
 }
+
 
 // Swagger documentation for the new endpoint
 /**
