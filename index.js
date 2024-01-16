@@ -528,15 +528,16 @@ async function getHostContact(client, passIdentifier) {
 
 
 
-// Swagger documentation for the new endpoint
 /**
  * @swagger
- * /loginSecurity:
+ * /getHostContactNumber:
  *   post:
- *     summary: Log in as security personnel
- *     description: Log in as security personnel with valid credentials
+ *     summary: Get host contact number for authenticated security personnel
+ *     description: Retrieve the contact number of the host from the visitor pass (only reviews destination host to visit to the public)
  *     tags:
  *       - Security
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -544,63 +545,58 @@ async function getHostContact(client, passIdentifier) {
  *           schema:
  *             type: object
  *             properties:
- *               username:
- *                 type: string
- *               password:
+ *               passIdentifier:
  *                 type: string
  *             required:
- *               - username
- *               - password
+ *               - passIdentifier
  *     responses:
  *       '200':
- *         description: Security personnel login successful
+ *         description: Host contact number retrieved successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 token:
+ *                 hostContactNumber:
  *                   type: string
- *                   description: Authentication token for the logged-in security personnel
+ *                   description: Contact number of the host
  *       '401':
- *         description: Unauthorized - Invalid credentials
+ *         description: Unauthorized - Invalid credentials or insufficient access level
+ *       '404':
+ *         description: Visitor pass not found or does not have access to host contact information
  */
 
-app.post('/loginSecurity', async (req, res) => {
+app.post('/getHostContactNumber', authenticateSecurity, async (req, res) => {
   let data = req.body;
   try {
-    const result = await loginSecurity(client, data);
-    res.status(200).json(result);
+    const hostContactNumber = await getHostContactNumber(client, data.passIdentifier);
+    res.status(200).json({ hostContactNumber: hostContactNumber });
   } catch (error) {
-    res.status(401).json({ error: error.message });
+    res.status(error.status).json({ error: error.message });
   }
 });
 
-async function loginSecurity(client, data) {
-  // Implement your authentication logic here
-  // For example, you can query the MongoDB collection to verify credentials
+async function getHostContactNumber(client, passIdentifier) {
+  // Implement logic to retrieve host contact number based on the visitor pass
+  // For example, query the database to get host information associated with the passIdentifier
 
-  const collectionSecurity = client.db('assignment').collection('Security');
-  const security = await collectionSecurity.findOne({ username: data.username });
+  const collectionVisitorPass = client.db('assignment').collection('Records');
+  const passInfo = await collectionVisitorPass.findOne({ passIdentifier: passIdentifier });
 
-  if (security) {
-    // Compare the provided password with the stored hashed password
-    const passwordMatch = await bcrypt.compare(data.password, security.password);
+  if (passInfo && passInfo.accessLevel === 'public') {
+    // Access is granted to retrieve host contact number
+    // Implement logic to retrieve host contact number from the host information
+    const hostContactNumber = passInfo.hostContactNumber;
 
-    if (passwordMatch) {
-      // Authentication successful, generate JWT token
-      const token = generateToken(security);
-      return { token: token };
+    if (hostContactNumber) {
+      return hostContactNumber;
     } else {
-      // Password does not match
-      throw new Error('Invalid credentials');
+      throw { status: 404, message: 'Host contact number not available for the given passIdentifier' };
     }
   } else {
-    // Username not found
-    throw new Error('Invalid credentials');
+    throw { status: 401, message: 'Unauthorized - Invalid passIdentifier or insufficient access level' };
   }
 }
-  
 
 
 
