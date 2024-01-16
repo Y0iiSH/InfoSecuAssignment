@@ -520,8 +520,6 @@ async function getSecurityContact(client, passIdentifier) {
 
 
 
-
-
 // Swagger documentation for the new endpoint
 /**
  * @swagger
@@ -866,6 +864,80 @@ async function registerHost(client, hostData) {
 
   return 'Host registration successful';
 }
+
+// Swagger documentation for the new endpoint
+/**
+ * @swagger
+ * /loginHost:
+ *   post:
+ *     summary: Log in as host
+ *     description: Log in as host with valid credentials
+ *     tags:
+ *       - Security
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Host login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in host
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
+
+app.post('/loginHost', async (req, res) => {
+  let data = req.body;
+  try {
+    const result = await loginHost(client, data);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+async function loginHost(client, data) {
+  // Implement your authentication logic here
+  // For example, you can query the MongoDB collection to verify credentials
+
+  const collectionHosts = client.db('assignment').collection('Hosts');
+  const host = await collectionHosts.findOne({ username: data.username });
+
+  if (host) {
+    // Compare the provided password with the stored hashed password
+    const passwordMatch = await bcrypt.compare(data.password, host.password);
+
+    if (passwordMatch) {
+      // Authentication successful, generate JWT token
+      const token = generateToken(host);
+      return { token: token };
+    } else {
+      // Password does not match
+      throw new Error('Invalid credentials');
+    }
+  } else {
+    // Username not found
+    throw new Error('Invalid credentials');
+  }
+}
+
 
   /**
  * @swagger
