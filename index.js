@@ -191,7 +191,7 @@ app.get('/viewAllHost', verifyToken, isAdmin, async (req, res) => {
 // Middleware to check if the user is an admin
 function isAdmin(req, res, next) {
   const userData = req.user;
-  if (userData.role !== 'admin') {
+  if (userData.role !== 'Admin') {
     return res.status(401).json({ error: 'Unauthorized - Only admins can view all hosts' });
   }
   next();
