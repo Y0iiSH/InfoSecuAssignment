@@ -571,21 +571,16 @@ async function loginSecurity(client, data) {
   // Implement your authentication logic here
   // For example, you can query the MongoDB collection to verify credentials
 
-
   const collectionSecurity = client.db('assignment').collection('Security');
-  await collectionSecurity.findOne({ username: data.username });
+  const security = await collectionSecurity.findOne({ username: data.username, password: data.password });
 
-  const user = await collectionSecurity.findOne({ username: data.username, password: data.password });
-
-  if (user) {
+  if (security) {
     // Authentication successful, generate JWT token
-    const token = generateToken(match);
+    const token = generateToken(security);
     return { token: token };
   } else {
     // Authentication failed
     throw new Error('Invalid credentials');
-  }
-}
 
 
 /**
