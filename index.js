@@ -450,31 +450,6 @@ async function registerSecurity(client, mydata) {
  */
 // ...
 
-app.get('/getHostContact', verifyToken, async (req, res) => {
-  const { passIdentifier } = req.query;
-
-  // Assuming the security personnel's username is stored in the token
-  const securityInfo = await getSecurityInfo(client, req.user.username);
-
-  if (!securityInfo) {
-    res.status(401).send('Unauthorized - Invalid security personnel');
-    return;
-  }
-
-  const hostContact = await getHostContact(client, passIdentifier);
-
-  if (hostContact) {
-    res.status(200).json({
-      hostName: hostContact.hostName,
-      contactNumber: hostContact.contactNumber,
-      visitorUsername: securityInfo.username,
-    });
-  } else {
-    res.status(404).send('Visitor pass not found or host information not available');
-  }
-});
-
-// Function to get host contact by visitor pass ID
 async function getHostContact(client, passIdentifier) {
   try {
     const visitorPass = await client
@@ -483,12 +458,15 @@ async function getHostContact(client, passIdentifier) {
       .findOne({ passIdentifier });
 
     if (visitorPass && visitorPass.issuedBy) {
+      console.log('Visitor pass found:', visitorPass);
+
       const hostInfo = await client
         .db('assignment')
         .collection('Hosts')
         .findOne({ username: visitorPass.issuedBy });
 
       if (hostInfo && hostInfo.phoneNumber) {
+        console.log('Host information found:', hostInfo);
         return {
           hostName: hostInfo.username,
           contactNumber: hostInfo.phoneNumber,
@@ -504,17 +482,8 @@ async function getHostContact(client, passIdentifier) {
   }
 
   return null;
-};
-
-// Function to get security information by username
-async function getSecurityInfo(client, username) {
-  const securityInfo = await client
-    .db('assignment')  // Ensure the correct database name is used
-    .collection('Security')
-    .findOne({ username });
-
-  return securityInfo;
 }
+
 
 
 
