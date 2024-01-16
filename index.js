@@ -595,7 +595,7 @@ async function loginSecurity(client, data) {
   
 
 
-/**
+
 /**
  * @swagger
  * /retrieveVisitorPass:
@@ -625,13 +625,11 @@ async function loginSecurity(client, data) {
  *                   type: string
  *                 name:
  *                   type: string
- *                 company:
- *                   type: string
- *                 vehicleNumber:
- *                   type: string
  *                 purpose:
  *                   type: string
  *                 checkInTime:
+ *                   type: string
+ *                 issuedBy:
  *                   type: string
  *       '404':
  *         description: Visitor pass not found
@@ -647,10 +645,9 @@ app.get('/retrieveVisitorPass', async (req, res) => {
       icNumber: passInfo.icNumber,
       passIdentifier: passInfo.passIdentifier,
       name: passInfo.name,
-      company: passInfo.company,
-      vehicleNumber: passInfo.vehicleNumber,
       purpose: passInfo.purpose,
-      checkInTime: passInfo.checkInTime.toISOString() // Adjust the format as needed
+      checkInTime: passInfo.checkInTime.toISOString(), // Adjust the format as needed
+      issuedBy: passInfo.issuedBy // Add the issuedBy information
     });
   } else {
     res.status(404).send('Visitor pass not found');
@@ -666,6 +663,7 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
 
   return passInfo;
 }
+
 
 /**
  * @swagger
