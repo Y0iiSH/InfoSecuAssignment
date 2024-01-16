@@ -452,24 +452,31 @@ async function registerSecurity(client, mydata) {
 
 async function getHostContact(client, passIdentifier) {
   try {
+    // Find the visitor pass based on passIdentifier
     const visitorPass = await client
       .db('assignment')
       .collection('Records')
       .findOne({ passIdentifier });
 
+    // Check if the visitor pass and issuedBy field are available
     if (visitorPass && visitorPass.issuedBy) {
       console.log('Visitor pass found:', visitorPass);
 
+      // Find the host information based on the issuedBy field
       const hostInfo = await client
         .db('assignment')
         .collection('Hosts')
         .findOne({ username: visitorPass.issuedBy });
 
+      // Check if hostInfo is available and has phoneNumber
       if (hostInfo && hostInfo.phoneNumber) {
         console.log('Host information found:', hostInfo);
+
+        // Return host information
         return {
           hostName: hostInfo.username,
           contactNumber: hostInfo.phoneNumber,
+          visitorUsername: visitorPass.issuedBy, // Include the visitor's username
         };
       } else {
         console.error('Host information not found or missing phoneNumber field.');
@@ -479,10 +486,14 @@ async function getHostContact(client, passIdentifier) {
     }
   } catch (error) {
     console.error('Error fetching host information:', error);
+    // Handle the error, e.g., return an error response
+    throw new Error('Error fetching host information');
   }
 
+  // Return null if any condition fails
   return null;
 }
+
 
 
 
