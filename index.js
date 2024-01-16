@@ -804,6 +804,7 @@ function generateUniquePassIdentifier() {
 }
 
 
+// Swagger documentation for the new endpoint
 /**
  * @swagger
  * /registerHost:
@@ -821,19 +822,19 @@ function generateUniquePassIdentifier() {
  *           schema:
  *             type: object
  *             properties:
- *               hostName:
+ *               username:
  *                 type: string
- *               ipAddress:
+ *               password:
  *                 type: string
- *               port:
- *                 type: number
- *               description:
+ *               name:
+ *                 type: string
+ *               phoneNumber:
  *                 type: string
  *             required:
- *               - hostName
- *               - ipAddress
- *               - port
- *               - description
+ *               - username
+ *               - password
+ *               - name
+ *               - phoneNumber
  *     responses:
  *       '200':
  *         description: Host registration successful
@@ -849,24 +850,22 @@ app.post('/registerHost', verifyToken, async (req, res) => {
   res.send(await registerHost(client, hostData));
 });
 
-// Function to handle host registration
+// Function to handle host registration with password hashing
 async function registerHost(client, hostData) {
-  // Implement your logic to handle host registration
-  // For example, insert the host data into the database
+  const hashedPassword = await bcrypt.hash(hostData.password, 10);
 
   const result = await client
     .db('assignment')
     .collection('Hosts')
     .insertOne({
-      hostName: hostData.hostName,
-      ipAddress: hostData.ipAddress,
-      port: hostData.port,
-      description: hostData.description,
+      username: hostData.username,
+      password: hashedPassword, // Store the hashed password
+      name: hostData.name,
+      phoneNumber: hostData.phoneNumber,
     });
 
   return 'Host registration successful';
 }
-
 
   /**
  * @swagger
