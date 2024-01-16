@@ -348,7 +348,8 @@ async function deleteUser(client, icNumber, role) {
 
 
 
- /**
+ // Swagger documentation for the new endpoint
+/**
  * @swagger
  * /registerSecurity:
  *   post:
@@ -401,22 +402,25 @@ async function deleteUser(client, icNumber, role) {
  *         description: Unauthorized - Token is missing or invalid
  */
 app.post('/registerSecurity', verifyToken, async (req, res) => {
-  let data = req.user;
   let mydata = req.body;
   res.send(await register(client, data, mydata));
 });
 
-async function register(client, data, mydata) {
+
+// Function to handle registration with password hashing
+async function register(client, mydata) {
+  const hashedPassword = await bcrypt.hash(mydata.password, 10);
+
   const result = await client
     .db('assignment')
     .collection('Security')
     .insertOne({
       username: mydata.username,
-      password: mydata.password,
+      password: hashedPassword, // Store the hashed password
       name: mydata.name,
       email: mydata.email,
       phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,  // Ensure icNumber is included
+      icNumber: mydata.icNumber,
       role: mydata.role,
     });
 
