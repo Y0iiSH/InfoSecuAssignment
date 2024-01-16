@@ -581,6 +581,10 @@ async function loginSecurity(client, data) {
   } else {
     // Authentication failed
     throw new Error('Invalid credentials');
+  }
+
+}
+  
 
 
 /**
