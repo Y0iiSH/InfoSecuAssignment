@@ -243,8 +243,8 @@ async function getAllRecords(client) {
  * @swagger
  * /deleteUser:
  *   delete:
- *     summary: Delete a visitor or security personnel by IC number and role
- *     description: Delete a user (visitor or security personnel) by providing IC number and role (requires admin token)
+ *     summary: Delete a user by IC number and role (visitor or security) or phone number (host)
+ *     description: Delete a user (visitor, security personnel, or host) by providing IC number and role or phone number (requires admin token)
  *     tags:
  *       - Admin
  *     security:
@@ -252,19 +252,25 @@ async function getAllRecords(client) {
  *     parameters:
  *       - in: query
  *         name: icNumber
- *         required: true
- *         description: IC number of the user to be deleted
+ *         required: false
+ *         description: IC number of the user to be deleted (required if role is 'visitor' or 'security')
  *         schema:
  *           type: string
  *       - in: query
  *         name: role
- *         required: true
+ *         required: false
  *         description: Role of the user to be deleted (visitor or security)
  *         schema:
  *           type: string
  *           enum:
  *             - visitor
  *             - security
+ *       - in: query
+ *         name: phoneNumber
+ *         required: false
+ *         description: Phone number of the host to be deleted (required if role is 'host')
+ *         schema:
+ *           type: string
  *     responses:
  *       '200':
  *         description: User deleted successfully
@@ -276,10 +282,10 @@ async function getAllRecords(client) {
  *         description: Internal Server Error
  */
 app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
-  const { icNumber, role } = req.query;
+  const { icNumber, role, phoneNumber } = req.query;
 
   try {
-    const result = await deleteUser(client, icNumber, role);
+    const result = await deleteUser(client, icNumber, role, phoneNumber);
 
     if (result.deletedCount > 0) {
       res.status(200).send('User deleted successfully');
@@ -292,15 +298,27 @@ app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
   }
 });
 
-// Function to delete a user by IC number and role
-async function deleteUser(client, icNumber, role) {
-  const collectionName = role === 'visitor' ? 'Records' : 'Security';
+// Function to delete a user by IC number and role or phone number
+async function deleteUser(client, icNumber, role, phoneNumber) {
+  let query = {};
+
+  if (role === 'visitor' || role === 'security') {
+    query.icNumber = icNumber;
+  } else if (role === 'host') {
+    query.phoneNumber = phoneNumber;
+  }
 
   return await client
-    .db('assignment') // Corrected the typo in the database name
-    .collection(collectionName)
-    .deleteOne({ icNumber });
+    .db('assignment')
+    .collection(getCollectionName(role))
+    .deleteOne(query);
 }
+
+// Function to get the collection name based on the role
+function getCollectionName(role) {
+  return role === 'visitor' ? 'Records' : role === 'security' ? 'Security' : 'Hosts';
+}
+
 
 
 
