@@ -690,77 +690,6 @@ function generateUniquePassIdentifier() {
   return Date.now().toString();
 }
 
-
-/**
- * @swagger
- * /registerHost:
- *   post:
- *     summary: Register a new host
- *     description: Register a new host with required details
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *               icNumber:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *               - name
- *               - phoneNumber
- *               - icNumber
- *     responses:
- *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-app.post('/registerHost', verifyToken, async (req, res) => {
-  let hostData = req.body;
-  hostData.role = 'host'; // Add role information
-  res.send(await registerHost(client, hostData));
-});
-
-// Function to handle host registration with password hashing
-async function registerHost(client, hostData) {
-  const hashedPassword = await bcrypt.hash(hostData.password, 10);
-
-  const result = await client
-    .db('assignment')
-    .collection('Hosts')
-    .insertOne({
-      username: hostData.username,
-      password: hashedPassword, // Store the hashed password
-      name: hostData.name,
-      phoneNumber: hostData.phoneNumber,
-      icNumber: hostData.icNumber, // Add IC number information
-      role: hostData.role, // Add the role information
-    });
-
-  return 'Host registration successful';
-}
-
-
-
 // Swagger documentation for the new endpoint
 /**
  * @swagger
@@ -833,6 +762,140 @@ async function loginHost(client, data) {
     throw new Error('Invalid credentials');
   }
 }
+
+/**
+ * @swagger
+ * /registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with required details
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *               icNumber:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - phoneNumber
+ *               - icNumber
+ *     responses:
+ *       '200':
+ *         description: Host registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/registerHost', verifyToken, async (req, res) => {
+  let hostData = req.body;
+  hostData.role = 'host'; // Add role information
+  res.send(await registerHost(client, hostData));
+});
+
+// Function to handle host registration with password hashing
+async function registerHost(client, hostData) {
+  const hashedPassword = await bcrypt.hash(hostData.password, 10);
+
+  const result = await client
+    .db('assignment')
+    .collection('Hosts')
+    .insertOne({
+      username: hostData.username,
+      password: hashedPassword, // Store the hashed password
+      name: hostData.name,
+      phoneNumber: hostData.phoneNumber,
+      icNumber: hostData.icNumber, // Add IC number information
+      role: hostData.role, // Add the role information
+    });
+
+  return 'Host registration successful';
+}
+
+/**
+ * @swagger
+ * /test/registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with required details
+ *     tags:
+ *       - Security
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *               icNumber:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - phoneNumber
+ *               - icNumber
+ *     responses:
+ *       '200':
+ *         description: Host registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ */
+app.post('/test/registerHost', async (req, res) => {
+  let hostData = req.body;
+  hostData.role = 'host'; // Add role information
+  res.send(await registerHost(client, hostData));
+});
+
+// Function to handle host registration with password hashing
+async function registerHost(client, hostData) {
+  const hashedPassword = await bcrypt.hash(hostData.password, 10);
+
+  const result = await client
+    .db('assignment')
+    .collection('Hosts')
+    .insertOne({
+      username: hostData.username,
+      password: hashedPassword, // Store the hashed password
+      name: hostData.name,
+      phoneNumber: hostData.phoneNumber,
+      icNumber: hostData.icNumber, // Add IC number information
+      role: hostData.role, // Add the role information
+    });
+
+  return 'Host registration successful';
+}
+
+
 
 /**
  * @swagger
