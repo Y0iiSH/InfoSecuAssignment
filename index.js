@@ -1139,35 +1139,6 @@ function generateToken(userProfile){
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
-function isStrongPassword(password) {
-  // Minimum length of 8 characters
-  if (password.length < 8) {
-    return false;
-  }
-
-  // At least one uppercase letter
-  if (!/[A-Z]/.test(password)) {
-    return false;
-  }
-
-  // At least one lowercase letter
-  if (!/[a-z]/.test(password)) {
-    return false;
-  }
-
-  // At least one digit
-  if (!/\d/.test(password)) {
-    return false;
-  }
-
-  // At least one special character
-  if (!/[!@#$%^&*()-_=+{};:'",.<>?/\\[\]^_`|~]/.test(password)) {
-    return false;
-  }
-
-  // All criteria met
-  return true;
-}
 
 //Function to register admin
 async function registerAdmin(client, data) {
@@ -1231,4 +1202,36 @@ function verifyToken(req, res, next) {
     next();
   });
 }
+
+function isStrongPassword(password) {
+  // Minimum length of 8 characters
+  if (password.length < 8) {
+    return false;
+  }
+
+  // At least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    return false;
+  }
+
+  // At least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    return false;
+  }
+
+  // At least one digit
+  if (!/\d/.test(password)) {
+    return false;
+  }
+
+  // At least one special character
+  if (!/[!@#$%^&*()-_=+{};:'",.<>?/\\[\]^_`|~]/.test(password)) {
+    return false;
+  }
+
+  // All criteria met
+  return true;
+}
+
+
 
