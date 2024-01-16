@@ -972,6 +972,97 @@ async function getAllVisitors(client) {
   return allVisitors;
 }
 
+/**
+ * @swagger
+ * /getHostPhoneNumber:
+ *   get:
+ *     summary: Get the contact number of the host from the given visitor pass
+ *     description: Get the contact number of the host who issued the provided visitor pass (requires security token)
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: passIdentifier
+ *         required: true
+ *         description: Visitor pass identifier
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Host contact retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 hostName:
+ *                   type: string
+ *                 contactNumber:
+ *                   type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '404':
+ *         description: Visitor pass not found or host information not available
+ */
+
+
+app.get('/getHostPhoneNumber', verifyToken, async (req, res) => {
+  const { passIdentifier } = req.query;
+  const hostInfo = await getHostContact(client, passIdentifier);
+
+  if (hostInfo) {
+    res.status(200).json(hostInfo);
+  } else {
+    res.status(404).send('Visitor pass not found or host information not available');
+  }
+});
+
+// Function to get host information by issuedBy (assuming it's the username)
+async function getHostInfo(client, issuedBy) {
+  const hostInfo = await client
+    .db('assignment')  
+    .collection('Hosts')
+    .findOne({ username: issuedBy });
+
+  return hostInfo;
+}
+
+// Function to get host contact by visitor pass ID
+async function getHostContact(client, passIdentifier) {
+  try {
+    const visitorPass = await client
+      .db('assignment')
+      .collection('Records')
+      .findOne({ passIdentifier });
+
+    if (visitorPass && visitorPass.issuedBy) {
+      // Assuming the host's name is stored in the `issuedBy` field
+      const hostInfo = await client
+        .db('assignment')
+        .collection('Hosts')
+        .findOne({ username: visitorPass.issuedBy });
+
+      if (hostInfo && hostInfo.phoneNumber) {
+        return {
+          hostName: hostInfo.username,
+          contactNumber: hostInfo.phoneNumber,
+        };
+      } else {
+        console.error('Host information not found or missing phoneNumber field.');
+      }
+    } else {
+      console.error('Visitor pass not found or missing issuedBy field.');
+    }
+  } catch (error) {
+    console.error('Error fetching host information:', error);
+  }
+
+  return null;
+}
+
+
 
 }
 
