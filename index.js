@@ -150,137 +150,58 @@ async function run() {
     res.send(await login(client, data));
   });
 
+
 /**
  * @swagger
- * /readAllData:
+ * /viewAllHost:
  *   get:
- *     summary: Read all data from the database
- *     description: Get all data from the database (requires admin token)
+ *     summary: View all hosts
+ *     description: View all hosts in the collection (Only accessible by admin)
  *     tags:
  *       - Admin
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: All data retrieved successfully
+ *         description: All hosts retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 admins:
- *                   type: array
- *                   description: List of admin details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                 securityPersonnel:
- *                   type: array
- *                   description: List of security personnel details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                       visitors:
- *                         type: array
- *                         description: List of visitors associated with the security personnel
- *                         items:
- *                           type: string
- *                 visitors:
- *                   type: array
- *                   description: List of visitor details
- *                   items:
- *                     type: object
- *                     properties:
- *                       username:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                         format: email
- *                       phoneNumber:
- *                         type: string
- *                       role:
- *                         type: string
- *                       records:
- *                         type: array
- *                         description: List of records associated with the visitor
- *                         items:
- *                           type: string
- *                 records:
- *                   type: array
- *                   description: List of all records
- *                   items:
- *                     type: object
- *                     properties:
- *                       recordID:
- *                         type: string
- *                       username:
- *                         type: string
- *                       purpose:
- *                         type: string
- *                       checkInTime:
- *                         type: string
- *                       checkOutTime:
- *                         type: string
- *     responses:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   username:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   phoneNumber:
+ *                     type: string
+ *                   role:
+ *                     type: string
  *       '401':
- *         description: Unauthorized - Token is missing or invalid
+ *         description: Unauthorized - Token is missing, invalid, or user is not an admin
  */
-app.get('/readAllData', verifyAdminToken, async (req, res) => {
-  res.send(await readAllData(client));
+
+app.get('/viewAllHost', verifyToken, isAdmin, async (req, res) => {
+  const allHosts = await getAllHosts(client);
+  res.status(200).json(allHosts);
 });
 
-// Function to read all data from the database
-async function readAllData(client) {
-  const admins = await client.db('assignment').collection('Admin').find().toArray();
-  const securityPersonnel = await client.db('assignment').collection('Security').find().toArray();
-  const records = await client.db('assignment').collection('Records').find().toArray();
-
-  return { admins, securityPersonnel, visitors, records };
+// Middleware to check if the user is an admin
+function isAdmin(req, res, next) {
+  const userData = req.user;
+  if (userData.role !== 'admin') {
+    return res.status(401).json({ error: 'Unauthorized - Only admins can view all hosts' });
+  }
+  next();
 }
 
-// Middleware to verify admin token
-function verifyAdminToken(req, res, next) {
-  const header = req.headers.authorization;
-
-  if (!header) {
-    return res.status(401).send('Unauthorized');
-  }
-
-  const token = header.split(' ')[1];
-
-  jwt.verify(token, 'dinpassword', function(err, decoded) {
-    if (err || decoded.role !== 'Admin') {
-      console.error(err);
-      return res.status(401).send('Invalid or insufficient admin token');
-    }
-
-    req.user = decoded;
-    next();
-  });
+// Function to retrieve all hosts from the collection
+async function getAllHosts(client) {
+  const hostsCollection = client.db('assignment').collection('Hosts');
+  const allHosts = await hostsCollection.find().toArray();
+  return allHosts;
 }
 
 /**
@@ -1016,49 +937,7 @@ async function issueVisitorPass(client, hostData, visitorData) {
   return `Visitor pass issued successfully by ${hostData.username}. Pass Identifier: ${passIdentifier}`;
 }
 
-  /**
- * @swagger
- * /readAdmin:
- *   get:
- *     summary: Read admin details
- *     description: Get details of the logged-in admin
- *     tags:
- *       - Admin
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Admin details retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 username:
- *                   type: string
- *                   description: Username of the admin
- *                 name:
- *                   type: string
- *                   description: Name of the admin
- *                 email:
- *                   type: string
- *                   format: email
- *                   description: Email of the admin
- *                 phoneNumber:
- *                   type: string
- *                   description: Phone number of the admin
- *                 role:
- *                   type: string
- *                   description: Role of the admin
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-
-  app.get('/readAdmin', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
-  });
-
+ 
  
  /**
  * @swagger
@@ -1121,48 +1000,7 @@ async function getAllVisitors(client) {
 
 
 
-  /**
- * @swagger
- * /readSecurity:
- *   get:
- *     summary: Read security personnel details
- *     description: Get details of the logged-in security personnel
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Security personnel details retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 username:
- *                   type: string
- *                   description: Username of the security personnel
- *                 name:
- *                   type: string
- *                   description: Name of the security personnel
- *                 email:
- *                   type: string
- *                   format: email
- *                   description: Email of the security personnel
- *                 phoneNumber:
- *                   type: string
- *                   description: Phone number of the security personnel
- *                 role:
- *                   type: string
- *                   description: Role of the security personnel
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- */
-  app.get('/readSecurity', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
-  });
-
+ 
 
 
 
@@ -1300,97 +1138,6 @@ async function register(client, data, mydata) {
     return "Visitor registered successfully";
   }
 }
-
-
-
-
-
-//Function to read data
-async function read(client, data) {
-  if (data.role == 'Admin') {
-    const Admins = await client.db('assignment').collection('Admin').find({ role: 'Admin' }).next();
-    const Securitys = await client.db('assignment').collection('Security').find({ role: 'Security' }).toArray();
-    const Visitors = await client.db('assignment').collection('Users').find({ role: 'Visitor' }).toArray();
-    const Records = await client.db('assignment').collection('Records').find().toArray();
-
-    return { Admins, Securitys, Visitors, Records };
-  }
-
-  if (data.role == 'Security') {
-    const Security = await client.db('assignment').collection('Security').findOne({ username: data.username });
-    if (!Security) {
-      return 'User not found';
-    }
-
-    const Visitors = await client.db('assignment').collection('Users').find({ Security: data.username }).toArray();
-    const Records = await client.db('assignment').collection('Records').find().toArray();
-
-    return { Security, Visitors, Records };
-  }
-
-  if (data.role == 'Visitor') {
-    const Visitor = await client.db('assignment').collection('Users').findOne({ username: data.username });
-    if (!Visitor) {
-      return 'User not found';
-    }
-
-    const Records = await client.db('assignment').collection('Records').find({ recordID: { $in: Visitor.records } }).toArray();
-
-    return { Visitor, Records };
-  }
-}
-
-
-
-
-
-//Function to check in
-async function checkIn(client, data, mydata) {
-  const usersCollection = client.db('assignment').collection('Users');
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  const currentUser = await usersCollection.findOne({ username: data.username });
-
-  if (!currentUser) {
-    return 'User not found';
-  }
-
-  if (currentUser.currentCheckIn) {
-    return 'Already checked in, please check out first!!!';
-  }
-
-  if (data.role !== 'Visitor') {
-    return 'Only visitors can access check-in.';
-  }
-
-  const existingRecord = await recordsCollection.findOne({ recordID: mydata.recordID });
-
-  if (existingRecord) {
-    return `The recordID '${mydata.recordID}' is already in use. Please enter another recordID.`;
-  }
-
-  const currentCheckInTime = new Date();
-
-  const recordData = {
-    username: data.username,
-    recordID: mydata.recordID,
-    purpose: mydata.purpose,
-    checkInTime: currentCheckInTime
-  };
-
-  await recordsCollection.insertOne(recordData);
-
-  await usersCollection.updateOne(
-    { username: data.username },
-    {
-      $set: { currentCheckIn: mydata.recordID },
-      $push: { records: mydata.recordID }
-    }
-  );
-
-  return `You have checked in at '${currentCheckInTime}' with recordID '${mydata.recordID}'`;
-}
-
 
 
 
