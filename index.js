@@ -476,9 +476,9 @@ async function getHostContact(client, passIdentifier) {
 
     if (visitorPass && visitorPass.issuedBy) {
       // Assuming the host's name is stored in the `issuedBy` field
-      const securityInfo = await client
+      const hostInfo = await client
         .db('assignment')
-        .collection('Hosts')
+        .collection('Records')
         .findOne({ username: visitorPass.issuedBy });
 
       if (hostInfo && hostInfo.phoneNumber) {
