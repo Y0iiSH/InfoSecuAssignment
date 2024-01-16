@@ -1068,15 +1068,6 @@ async function getAllVisitors(client) {
 }
 
 
-
-
- 
-
-
-
- 
- 
-
 }
 
 run().catch(console.error);
@@ -1103,45 +1094,6 @@ async function registerAdmin(client, data) {
 }
 
 
-//Function to login
-async function login(client, data) {
-  const adminCollection = client.db("assignment").collection("Admin");
-  const securityCollection = client.db("assignment").collection("Security");
-  const usersCollection = client.db("assignment").collection("Users");
-
-  // Find the admin user
-  let match = await adminCollection.findOne({ username: data.username });
-
-  if (!match) {
-    // Find the security user
-    match = await securityCollection.findOne({ username: data.username });
-  }
-
-  if (!match) {
-    // Find the regular user
-    match = await usersCollection.findOne({ username: data.username });
-  }
-
-  if (match) {
-    // Compare the provided password with the stored password
-    const isPasswordMatch = await decryptPassword(data.password, match.password);
-
-    if (isPasswordMatch) {
-      console.clear(); // Clear the console
-      const token = generateToken(match);
-      console.log(output(match.role));
-      return "\nToken for " + match.name + ": " + token;
-    }
-     else {
-      return "Wrong password";
-    }
-  } else {
-    return "User not found";
-  }
-}
-
-
-
 //Function to encrypt password
 async function encryptPassword(password) {
   const hash = await bcrypt.hash(password, saltRounds); 
@@ -1155,63 +1107,6 @@ async function decryptPassword(password, compare) {
   return match
 }
 
-
-//Function to register security and visitor
-async function register(client, data, mydata) {
-  const adminCollection = client.db("assignment").collection("Admin");
-  const securityCollection = client.db("assignment").collection("Security");
-  
-
-  const tempAdmin = await adminCollection.findOne({ username: mydata.username });
-  const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  
-
-  if (tempAdmin || tempSecurity || tempUser) {
-    return "Username already in use, please enter another username";
-  }
-
-  if (data.role === "Admin") {
-    const result = await securityCollection.insertOne({
-      username: mydata.username,
-      password: await encryptPassword(mydata.password),
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      role: "Security",
-      visitors: [],
-    });
-
-    return "Security registered successfully";
-  }
-
-  if (data.role === "Security") {
-    const result = await usersCollection.insertOne({
-      username: mydata.username,
-      password: await encryptPassword(mydata.password),
-      name: mydata.name,
-      email: mydata.email,
-      
-      Security: data.username,
-      company: mydata.company,
-      vehicleNumber: mydata.vehicleNumber,
-      icNumber: mydata.icNumber,
-      phoneNumber: mydata.phoneNumber,
-      role: "Visitor",
-      records: [],
-    });
-
-    const updateResult = await securityCollection.updateOne(
-      { username: data.username },
-      { $push: { visitors: mydata.username } }
-    );
-
-    return "Visitor registered successfully";
-  }
-}
-
-
-
-
 //Function to output
 function output(data) {
   if(data == 'Admin') {
@@ -1222,8 +1117,6 @@ function output(data) {
     return "You are logged in as Visitor\n1)check in\n2)check out\n3)read visitor data\n4)update profile\n5)delete account"
   }
 }
-
-
 
 //to verify JWT Token
 function verifyToken(req, res, next) {
