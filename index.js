@@ -412,12 +412,13 @@ async function registerSecurity(client, mydata) {
 
 
 
+
 /**
  * @swagger
  * /getHostContact:
  *   get:
- *     summary: Get the contact number of the host from the given visitor pass
- *     description: Get the contact number of the host who owns the provided visitor pass (requires security token)
+ *     summary: Get the contact information of the host from the given visitor pass
+ *     description: Get the contact information of the host who issued the provided visitor pass (requires security token)
  *     tags:
  *       - Security
  *     security:
@@ -431,7 +432,7 @@ async function registerSecurity(client, mydata) {
  *           type: string
  *     responses:
  *       '200':
- *         description: Host contact retrieved successfully
+ *         description: Host contact information retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -439,9 +440,7 @@ async function registerSecurity(client, mydata) {
  *               properties:
  *                 hostName:
  *                   type: string
- *                 contactNumber:
- *                   type: string
- *                 visitorName:
+ *                 hostContact:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
@@ -450,74 +449,49 @@ async function registerSecurity(client, mydata) {
  */
 app.get('/getHostContact', verifyToken, async (req, res) => {
   const { passIdentifier } = req.query;
-
   try {
-    // Get security personnel information based on the token
-    const securityInfo = await getSecurityInfo(client, req.user.username);
-
-    // Check if security personnel information is available
-    if (!securityInfo) {
-      res.status(401).send('Unauthorized - Invalid security personnel');
-      return;
-    }
-
-    // Get host contact information by passIdentifier
-    const hostContact = await getHostContact(client, passIdentifier);
-
-    // Check if host contact information is available
-    if (hostContact) {
-      res.status(200).json({
-        hostName: hostContact.hostName,
-        contactNumber: hostContact.contactNumber,
-        visitorName: hostContact.visitorName,
-      });
+    const hostInfo = await getHostContact(client, passIdentifier);
+    
+    if (hostInfo) {
+      res.status(200).json(hostInfo);
     } else {
-      res.status(404).send('Visitor pass not found or host information not available');
+      res.status(404).json({ error: 'Visitor pass not found or host information not available' });
     }
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// Function to get host contact by visitor pass ID
+// Function to get host contact information by visitor pass ID
 async function getHostContact(client, passIdentifier) {
   try {
-    // Find the visitor pass based on passIdentifier
     const visitorPass = await client
       .db('assignment')
       .collection('Records')
       .findOne({ passIdentifier });
 
-    // Check if the visitor pass and issuedBy field are available
     if (visitorPass && visitorPass.issuedBy) {
-      // Find the host information based on the issuedBy field
+      // Assuming the host's name and contact are stored in the `issuedBy` field
       const hostInfo = await client
         .db('assignment')
         .collection('Hosts')
         .findOne({ username: visitorPass.issuedBy });
 
-      // Check if hostInfo is available and has phoneNumber
-      if (hostInfo && hostInfo.phoneNumber) {
-        // Return host information
+      if (hostInfo && hostInfo.contactNumber) {
         return {
           hostName: hostInfo.username,
-          contactNumber: hostInfo.phoneNumber,
-          visitorName: visitorPass.name,
+          hostContact: hostInfo.contactNumber,
         };
       } else {
-        console.error('Host information not found or missing phoneNumber field.');
+        console.error('Host information not found or missing contactNumber field.');
       }
     } else {
       console.error('Visitor pass not found or missing issuedBy field.');
     }
   } catch (error) {
     console.error('Error fetching host information:', error);
-    // Throw an error to be handled in the calling function
-    throw new Error('Error fetching host information');
   }
 
-  // Return null if any condition fails
   return null;
 }
 
@@ -528,75 +502,6 @@ async function getHostContact(client, passIdentifier) {
 
 
 
-/**
- * @swagger
- * /getHostContactNumber:
- *   post:
- *     summary: Get host contact number for authenticated security personnel
- *     description: Retrieve the contact number of the host from the visitor pass (only reviews destination host to visit to the public)
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               passIdentifier:
- *                 type: string
- *             required:
- *               - passIdentifier
- *     responses:
- *       '200':
- *         description: Host contact number retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 hostContactNumber:
- *                   type: string
- *                   description: Contact number of the host
- *       '401':
- *         description: Unauthorized - Invalid credentials or insufficient access level
- *       '404':
- *         description: Visitor pass not found or does not have access to host contact information
- */
-
-app.post('/getHostContactNumber', authenticateSecurity, async (req, res) => {
-  let data = req.body;
-  try {
-    const hostContactNumber = await getHostContactNumber(client, data.passIdentifier);
-    res.status(200).json({ hostContactNumber: hostContactNumber });
-  } catch (error) {
-    res.status(error.status).json({ error: error.message });
-  }
-});
-
-async function getHostContactNumber(client, passIdentifier) {
-  // Implement logic to retrieve host contact number based on the visitor pass
-  // For example, query the database to get host information associated with the passIdentifier
-
-  const collectionVisitorPass = client.db('assignment').collection('Records');
-  const passInfo = await collectionVisitorPass.findOne({ passIdentifier: passIdentifier });
-
-  if (passInfo && passInfo.accessLevel === 'public') {
-    // Access is granted to retrieve host contact number
-    // Implement logic to retrieve host contact number from the host information
-    const hostContactNumber = passInfo.hostContactNumber;
-
-    if (hostContactNumber) {
-      return hostContactNumber;
-    } else {
-      throw { status: 404, message: 'Host contact number not available for the given passIdentifier' };
-    }
-  } else {
-    throw { status: 401, message: 'Unauthorized - Invalid passIdentifier or insufficient access level' };
-  }
-}
 
 
 
