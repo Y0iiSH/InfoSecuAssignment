@@ -444,6 +444,9 @@ async function registerSecurity(client, mydata) {
  *       '404':
  *         description: Visitor pass not found or host information not available
  */
+
+const { verifyToken } = require('./auth'); // Replace with the actual path to your authentication middleware
+
 app.get('/getHostPhoneNumber', verifyToken, async (req, res) => {
   const { passIdentifier } = req.query;
   const hostInfo = await getHostContact(client, passIdentifier);
@@ -458,15 +461,14 @@ app.get('/getHostPhoneNumber', verifyToken, async (req, res) => {
 // Function to get host information by issuedBy (assuming it's the username)
 async function getHostInfo(client, issuedBy) {
   const hostInfo = await client
-    .db('assignment')  // Ensure the correct database name is used
+    .db('assignment')  
     .collection('Hosts')
-    .findOne({ username: issuedBy });  // Assuming issuedBy corresponds to the host username
+    .findOne({ username: issuedBy });
 
   return hostInfo;
 }
 
-
-// Function to get security contact by visitor pass ID
+// Function to get host contact by visitor pass ID
 async function getHostContact(client, passIdentifier) {
   try {
     const visitorPass = await client
@@ -478,7 +480,7 @@ async function getHostContact(client, passIdentifier) {
       // Assuming the host's name is stored in the `issuedBy` field
       const hostInfo = await client
         .db('assignment')
-        .collection('Records')
+        .collection('Hosts')
         .findOne({ username: visitorPass.issuedBy });
 
       if (hostInfo && hostInfo.phoneNumber) {
@@ -498,6 +500,7 @@ async function getHostContact(client, passIdentifier) {
 
   return null;
 }
+
 
 
 
