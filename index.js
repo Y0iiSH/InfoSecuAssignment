@@ -452,7 +452,7 @@ app.get('/getHostContact', verifyToken, async (req, res) => {
   const { passIdentifier } = req.query;
 
   // Assuming the security personnel's username is stored in the token
-  const securityInfo = await getSecurityInfo(client, req.user.username);
+  const securityInfo = await securityInfo(client, req.user.username);
 
   if (!securityInfo) {
     res.status(401).send('Unauthorized - Invalid security personnel');
