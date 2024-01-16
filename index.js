@@ -873,7 +873,7 @@ async function registerHost(client, hostData) {
  *     summary: Log in as host
  *     description: Log in as host with valid credentials
  *     tags:
- *       - Security
+ *       - Host
  *     requestBody:
  *       required: true
  *       content:
@@ -938,6 +938,83 @@ async function loginHost(client, data) {
   }
 }
 
+/**
+ * @swagger
+ * /issueVisitorPass:
+ *   post:
+ *     summary: Issue a visitor pass
+ *     description: Issue a visitor pass for a visitor without creating a visitor account
+ *     tags:
+ *       - Host
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               icNumber:
+ *                 type: string
+ *               purpose:
+ *                 type: string
+ *             required:
+ *               - name
+ *               - icNumber
+ *               - purpose
+ *     responses:
+ *       '200':
+ *         description: Visitor pass issued successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/issueVisitorPass', verifyToken, async (req, res) => {
+  let hostData = req.user;
+  let visitorData = req.body;
+
+  // Create a visitor record without creating a visitor account
+  const result = await issueVisitorPass(client, hostData, visitorData);
+
+  res.send(result);
+});
+
+// Function to issue a visitor pass
+async function issueVisitorPass(client, hostData, visitorData) {
+  const recordsCollection = client.db('assignment').collection('Records');
+
+  // Check if the visitor already has a pass issued
+  const existingRecord = await recordsCollection.findOne({ icNumber: visitorData.icNumber, checkOutTime: null });
+
+  if (existingRecord) {
+    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
+  }
+
+  // Generate a unique passIdentifier for the visitor pass
+  const passIdentifier = generateUniquePassIdentifier();
+
+  const currentCheckInTime = new Date();
+
+  const recordData = {
+    icNumber: visitorData.icNumber,
+    passIdentifier: passIdentifier,
+    name: visitorData.name,
+    purpose: visitorData.purpose,
+    checkInTime: currentCheckInTime,
+    issuedBy: hostData.username // Add the issuedBy information (host instead of security)
+  };
+
+  // Insert the visitor record into the database
+  await recordsCollection.insertOne(recordData);
+
+  return `Visitor pass issued successfully by ${hostData.username}. Pass Identifier: ${passIdentifier}`;
+}
 
   /**
  * @swagger
