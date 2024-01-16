@@ -441,15 +441,46 @@ async function registerSecurity(client, mydata) {
  *                   type: string
  *                 contactNumber:
  *                   type: string
- *                 visitorUsername:
+ *                 visitorName:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
  *         description: Visitor pass not found or host information not available
  */
-// ...
+app.get('/getHostContact', verifyToken, async (req, res) => {
+  const { passIdentifier } = req.query;
 
+  try {
+    // Get security personnel information based on the token
+    const securityInfo = await getSecurityInfo(client, req.user.username);
+
+    // Check if security personnel information is available
+    if (!securityInfo) {
+      res.status(401).send('Unauthorized - Invalid security personnel');
+      return;
+    }
+
+    // Get host contact information by passIdentifier
+    const hostContact = await getHostContact(client, passIdentifier);
+
+    // Check if host contact information is available
+    if (hostContact) {
+      res.status(200).json({
+        hostName: hostContact.hostName,
+        contactNumber: hostContact.contactNumber,
+        visitorName: hostContact.visitorName,
+      });
+    } else {
+      res.status(404).send('Visitor pass not found or host information not available');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Function to get host contact by visitor pass ID
 async function getHostContact(client, passIdentifier) {
   try {
     // Find the visitor pass based on passIdentifier
@@ -460,8 +491,6 @@ async function getHostContact(client, passIdentifier) {
 
     // Check if the visitor pass and issuedBy field are available
     if (visitorPass && visitorPass.issuedBy) {
-      console.log('Visitor pass found:', visitorPass);
-
       // Find the host information based on the issuedBy field
       const hostInfo = await client
         .db('assignment')
@@ -470,13 +499,11 @@ async function getHostContact(client, passIdentifier) {
 
       // Check if hostInfo is available and has phoneNumber
       if (hostInfo && hostInfo.phoneNumber) {
-        console.log('Host information found:', hostInfo);
-
         // Return host information
         return {
           hostName: hostInfo.username,
           contactNumber: hostInfo.phoneNumber,
-          visitorUsername: visitorPass.issuedBy, // Include the visitor's username
+          visitorName: visitorPass.name,
         };
       } else {
         console.error('Host information not found or missing phoneNumber field.');
@@ -486,14 +513,13 @@ async function getHostContact(client, passIdentifier) {
     }
   } catch (error) {
     console.error('Error fetching host information:', error);
-    // Handle the error, e.g., return an error response
+    // Throw an error to be handled in the calling function
     throw new Error('Error fetching host information');
   }
 
   // Return null if any condition fails
   return null;
 }
-
 
 
 
