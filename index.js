@@ -448,11 +448,13 @@ async function registerSecurity(client, mydata) {
  *       '404':
  *         description: Visitor pass not found or host information not available
  */
+// ...
+
 app.get('/getHostContact', verifyToken, async (req, res) => {
   const { passIdentifier } = req.query;
 
   // Assuming the security personnel's username is stored in the token
-  const securityInfo = await securityInfo(client, req.user.username);
+  const securityInfo = await getSecurityInfo(client, req.user.username);
 
   if (!securityInfo) {
     res.status(401).send('Unauthorized - Invalid security personnel');
@@ -502,7 +504,20 @@ async function getHostContact(client, passIdentifier) {
   }
 
   return null;
+};
+
+// Function to get security information by username
+async function getSecurityInfo(client, username) {
+  const securityInfo = await client
+    .db('assignment')  // Ensure the correct database name is used
+    .collection('Security')
+    .findOne({ username });
+
+  return securityInfo;
 }
+
+
+
 
 
 
