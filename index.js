@@ -1139,18 +1139,52 @@ function generateToken(userProfile){
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
+function isStrongPassword(password) {
+  // Minimum length of 8 characters
+  if (password.length < 8) {
+    return false;
+  }
+
+  // At least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    return false;
+  }
+
+  // At least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    return false;
+  }
+
+  // At least one digit
+  if (!/\d/.test(password)) {
+    return false;
+  }
+
+  // At least one special character
+  if (!/[!@#$%^&*()-_=+{};:'",.<>?/\\[\]^_`|~]/.test(password)) {
+    return false;
+  }
+
+  // All criteria met
+  return true;
+}
+
 //Function to register admin
 async function registerAdmin(client, data) {
   data.password = await encryptPassword(data.password);
-  
+
   const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
+
   if (existingUser) {
     return 'Username already registered';
+  } else if (!isStrongPassword(data.password)) {
+    return 'Password does not meet the criteria for a strong password';
   } else {
     const result = await client.db("assignment").collection("Admin").insertOne(data);
     return 'Admin registered';
   }
 }
+
 
 
 //Function to encrypt password
