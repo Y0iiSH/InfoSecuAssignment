@@ -252,25 +252,20 @@ async function getAllRecords(client) {
  *     parameters:
  *       - in: query
  *         name: icNumber
- *         required: false
+ *         required: true
  *         description: IC number of the user to be deleted (required if role is 'visitor' or 'security')
  *         schema:
  *           type: string
  *       - in: query
  *         name: role
- *         required: false
- *         description: Role of the user to be deleted (visitor or security)
+ *         required: true
+ *         description: Role of the user to be deleted (visitor, security, or host)
  *         schema:
  *           type: string
  *           enum:
  *             - visitor
  *             - security
- *       - in: query
- *         name: phoneNumber
- *         required: false
- *         description: Phone number of the host to be deleted (required if role is 'host')
- *         schema:
- *           type: string
+ *             - host
  *     responses:
  *       '200':
  *         description: User deleted successfully
@@ -282,10 +277,16 @@ async function getAllRecords(client) {
  *         description: Internal Server Error
  */
 app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
-  const { icNumber, role, phoneNumber } = req.query;
+  const { icNumber, role } = req.query;
 
   try {
-    const result = await deleteUser(client, icNumber, role, phoneNumber);
+    // Validate that both role and icNumber are provided
+    if (!icNumber || !role) {
+      res.status(400).send('IC number and role are required');
+      return;
+    }
+
+    const result = await deleteUser(client, icNumber, role);
 
     if (result.deletedCount > 0) {
       res.status(200).send('User deleted successfully');
@@ -298,14 +299,12 @@ app.delete('/deleteUser', verifyAdminToken, async (req, res) => {
   }
 });
 
-// Function to delete a user by IC number and role or phone number
-async function deleteUser(client, icNumber, role, phoneNumber) {
+// Function to delete a user by IC number and role
+async function deleteUser(client, icNumber, role) {
   let query = {};
 
   if (role === 'visitor' || role === 'security') {
     query.icNumber = icNumber;
-  } else if (role === 'host') {
-    query.phoneNumber = phoneNumber;
   }
 
   return await client
@@ -318,6 +317,7 @@ async function deleteUser(client, icNumber, role, phoneNumber) {
 function getCollectionName(role) {
   return role === 'visitor' ? 'Records' : role === 'security' ? 'Security' : 'Hosts';
 }
+
 
 
 
@@ -799,11 +799,14 @@ function generateUniquePassIdentifier() {
  *                 type: string
  *               phoneNumber:
  *                 type: string
+ *               icNumber:
+ *                 type: string
  *             required:
  *               - username
  *               - password
  *               - name
  *               - phoneNumber
+ *               - icNumber
  *     responses:
  *       '200':
  *         description: Host registration successful
@@ -832,11 +835,13 @@ async function registerHost(client, hostData) {
       password: hashedPassword, // Store the hashed password
       name: hostData.name,
       phoneNumber: hostData.phoneNumber,
+      icNumber: hostData.icNumber, // Add IC number information
       role: hostData.role, // Add the role information
     });
 
   return 'Host registration successful';
 }
+
 
 
 // Swagger documentation for the new endpoint
