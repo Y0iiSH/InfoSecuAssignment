@@ -517,6 +517,7 @@ async function getSecurityContact(client, passIdentifier) {
 
 
 
+
 // Swagger documentation for the new endpoint
 /**
  * @swagger
@@ -565,8 +566,8 @@ app.post('/loginSecurity', async (req, res) => {
   }
 });
 
- // Function to handle login
- async function loginSecurity(client, data) {
+// Function to handle login
+async function loginSecurity(client, data) {
   // Implement your authentication logic here
   // For example, you can query the MongoDB collection to verify credentials
 
@@ -576,13 +577,15 @@ app.post('/loginSecurity', async (req, res) => {
   const user = await collection.findOne({ username: data.username, password: data.password });
 
   if (user) {
-    // Authentication successful
-    return { token: 'your_generated_token' };
+    // Authentication successful, generate JWT token
+    const token = jwt.sign({ username: user.username }, jwtSecretKey, { expiresIn: '1h' });
+    return { token: token };
   } else {
     // Authentication failed
     throw new Error('Invalid credentials');
   }
 }
+
 
 /**
 /**
