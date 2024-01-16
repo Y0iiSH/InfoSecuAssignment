@@ -412,13 +412,12 @@ async function registerSecurity(client, mydata) {
 
 
 
-
 /**
  * @swagger
  * /getHostContact:
  *   get:
- *     summary: Get the contact information of the host from the given visitor pass
- *     description: Get the contact information of the host who issued the provided visitor pass (requires security token)
+ *     summary: Get the contact number of the host from the given visitor pass
+ *     description: Get the contact number of the host who owns the provided visitor pass (requires security token)
  *     tags:
  *       - Security
  *     security:
@@ -432,7 +431,7 @@ async function registerSecurity(client, mydata) {
  *           type: string
  *     responses:
  *       '200':
- *         description: Host contact information retrieved successfully
+ *         description: Host contact retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -440,58 +439,58 @@ async function registerSecurity(client, mydata) {
  *               properties:
  *                 hostName:
  *                   type: string
- *                 hostContact:
+ *                 contactNumber:
+ *                   type: string
+ *                 visitorUsername:
  *                   type: string
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
  *         description: Visitor pass not found or host information not available
  */
-app.get('/getHostContact', verifyToken, async (req, res) => {
-  const { passIdentifier } = req.query;
-  try {
-    const hostInfo = await getHostContact(client, passIdentifier);
-    
-    if (hostInfo) {
-      res.status(200).json(hostInfo);
-    } else {
-      res.status(404).json({ error: 'Visitor pass not found or host information not available' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
+// ...
 
-// Function to get host contact information by visitor pass ID
 async function getHostContact(client, passIdentifier) {
   try {
+    // Find the visitor pass based on passIdentifier
     const visitorPass = await client
       .db('assignment')
       .collection('Records')
       .findOne({ passIdentifier });
 
+    // Check if the visitor pass and issuedBy field are available
     if (visitorPass && visitorPass.issuedBy) {
-      // Assuming the host's name and contact are stored in the `issuedBy` field
+      console.log('Visitor pass found:', visitorPass);
+
+      // Find the host information based on the issuedBy field
       const hostInfo = await client
         .db('assignment')
         .collection('Hosts')
         .findOne({ username: visitorPass.issuedBy });
 
-      if (hostInfo && hostInfo.contactNumber) {
+      // Check if hostInfo is available and has phoneNumber
+      if (hostInfo && hostInfo.phoneNumber) {
+        console.log('Host information found:', hostInfo);
+
+        // Return host information
         return {
           hostName: hostInfo.username,
-          hostContact: hostInfo.contactNumber,
+          contactNumber: hostInfo.phoneNumber,
+          visitorUsername: visitorPass.issuedBy, // Include the visitor's username
         };
       } else {
-        console.error('Host information not found or missing contactNumber field.');
+        console.error('Host information not found or missing phoneNumber field.');
       }
     } else {
       console.error('Visitor pass not found or missing issuedBy field.');
     }
   } catch (error) {
     console.error('Error fetching host information:', error);
+    // Handle the error, e.g., return an error response
+    throw new Error('Error fetching host information');
   }
 
+  // Return null if any condition fails
   return null;
 }
 
@@ -502,6 +501,80 @@ async function getHostContact(client, passIdentifier) {
 
 
 
+
+// Swagger documentation for the new endpoint
+/**
+ * @swagger
+ * /loginSecurity:
+ *   post:
+ *     summary: Log in as security personnel
+ *     description: Log in as security personnel with valid credentials
+ *     tags:
+ *       - Security
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *             required:
+ *               - username
+ *               - password
+ *     responses:
+ *       '200':
+ *         description: Security personnel login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: Authentication token for the logged-in security personnel
+ *       '401':
+ *         description: Unauthorized - Invalid credentials
+ */
+
+app.post('/loginSecurity', async (req, res) => {
+  let data = req.body;
+  try {
+    const result = await loginSecurity(client, data);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+async function loginSecurity(client, data) {
+  // Implement your authentication logic here
+  // For example, you can query the MongoDB collection to verify credentials
+
+  const collectionSecurity = client.db('assignment').collection('Security');
+  const security = await collectionSecurity.findOne({ username: data.username });
+
+  if (security) {
+    // Compare the provided password with the stored hashed password
+    const passwordMatch = await bcrypt.compare(data.password, security.password);
+
+    if (passwordMatch) {
+      // Authentication successful, generate JWT token
+      const token = generateToken(security);
+      return { token: token };
+    } else {
+      // Password does not match
+      throw new Error('Invalid credentials');
+    }
+  } else {
+    // Username not found
+    throw new Error('Invalid credentials');
+  }
+}
+  
 
 
 
