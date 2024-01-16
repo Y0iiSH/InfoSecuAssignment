@@ -269,6 +269,14 @@ async function getAllRecords(client) {
  *     responses:
  *       '200':
  *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 deletedUser:
+ *                   type: object
+ *                   description: The deleted user's data
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
@@ -286,10 +294,10 @@ app.delete('/deleteUser', verifyToken, async (req, res) => {
       return;
     }
 
-    const result = await deleteUser(client, icNumber, role);
+    const deletedUser = await deleteUser(client, icNumber, role);
 
-    if (result.deletedCount > 0) {
-      res.status(200).send('User deleted successfully');
+    if (deletedUser) {
+      res.status(200).json({ deletedUser });
     } else {
       res.status(404).send('User not found');
     }
@@ -307,10 +315,12 @@ async function deleteUser(client, icNumber, role) {
     query.icNumber = icNumber;
   }
 
-  return await client
-    .db('assignment')
-    .collection(getCollectionName(role))
-    .deleteOne(query);
+  const collection = client.db('assignment').collection(getCollectionName(role));
+  const deletedUser = await collection.findOne(query);
+
+  await collection.deleteOne(query);
+
+  return deletedUser;
 }
 
 // Function to get the collection name based on the role
