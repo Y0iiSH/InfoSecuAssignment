@@ -348,7 +348,7 @@ async function deleteUser(client, icNumber, role) {
 
 
 
- // Swagger documentation for the new endpoint
+// Swagger documentation for the new endpoint
 /**
  * @swagger
  * /registerSecurity:
@@ -403,12 +403,11 @@ async function deleteUser(client, icNumber, role) {
  */
 app.post('/registerSecurity', verifyToken, async (req, res) => {
   let mydata = req.body;
-  res.send(await register(client, data, mydata));
+  res.send(await registerSecurity(client, mydata));
 });
 
-
 // Function to handle registration with password hashing
-async function register(client, mydata) {
+async function registerSecurity(client, mydata) {
   const hashedPassword = await bcrypt.hash(mydata.password, 10);
 
   const result = await client
@@ -426,6 +425,7 @@ async function register(client, mydata) {
 
   return 'Security personnel registration successful';
 }
+
 
 
  /**
