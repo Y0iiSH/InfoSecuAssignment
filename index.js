@@ -243,8 +243,8 @@ async function getAllRecords(client) {
  * @swagger
  * /deleteUser:
  *   delete:
- *     summary: Delete a user by IC number and role (visitor or security) or phone number (host)
- *     description: Delete a user (visitor, security personnel, or host) by providing IC number and role or phone number (requires admin token)
+ *     summary: Delete a user by IC number and role (visitor, security or host)
+ *     description: Delete a user (visitor, security personnel, or host) by providing IC number and role (requires admin token)
  *     tags:
  *       - Admin
  *     security:
@@ -253,7 +253,7 @@ async function getAllRecords(client) {
  *       - in: query
  *         name: icNumber
  *         required: true
- *         description: IC number of the user to be deleted (required if role is 'visitor' or 'security')
+ *         description: IC number of the user to be deleted 
  *         schema:
  *           type: string
  *       - in: query
@@ -493,7 +493,6 @@ async function getHostContact(client, passIdentifier) {
   // Return null if any condition fails
   return null;
 }
-
 
 
 
