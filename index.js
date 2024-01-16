@@ -153,46 +153,73 @@ async function run() {
 
 /**
  * @swagger
- * /viewAllHost:
+ * /viewAllHosts:
  *   get:
- *     summary: View all hosts
- *     description: View all hosts in the collection (Only accessible by admin)
+ *     summary: View all hosts and visitor records
+ *     description: View all hosts and records in their respective collections (Only accessible by admin)
  *     tags:
  *       - Admin
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       '200':
- *         description: All hosts retrieved successfully
+ *         description: All hosts and records retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   username:
- *                     type: string
- *                   name:
- *                     type: string
- *                   phoneNumber:
- *                     type: string
- *                   role:
- *                     type: string
+ *               type: object
+ *               properties:
+ *                 hosts:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       phoneNumber:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                 records:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       icNumber:
+ *                         type: string
+ *                       passIdentifier:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       purpose:
+ *                         type: string
+ *                       checkInTime:
+ *                         type: string
+ *                       issuedBy:
+ *                         type: string
  *       '401':
  *         description: Unauthorized - Token is missing, invalid, or user is not an admin
  */
 
-app.get('/viewAllHost', verifyToken, isAdmin, async (req, res) => {
+app.get('/viewAllHosts', verifyToken, isAdmin, async (req, res) => {
   const allHosts = await getAllHosts(client);
-  res.status(200).json(allHosts);
+  const allRecords = await getAllRecords(client);
+  
+  const result = {
+    hosts: allHosts,
+    records: allRecords
+  };
+
+  res.status(200).json(result);
 });
 
 // Middleware to check if the user is an admin
 function isAdmin(req, res, next) {
   const userData = req.user;
-  if (userData.role !== 'Admin') {
-    return res.status(401).json({ error: 'Unauthorized - Only admins can view all hosts' });
+  if (userData.role !== 'admin') {
+    return res.status(401).json({ error: 'Unauthorized - Only admins can view all resources' });
   }
   next();
 }
@@ -203,6 +230,14 @@ async function getAllHosts(client) {
   const allHosts = await hostsCollection.find().toArray();
   return allHosts;
 }
+
+// Function to retrieve all records from the collection
+async function getAllRecords(client) {
+  const recordsCollection = client.db('assignment').collection('Records');
+  const allRecords = await recordsCollection.find().toArray();
+  return allRecords;
+}
+
 
 /**
  * @swagger
