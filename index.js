@@ -817,17 +817,15 @@ async function loginHost(client, data) {
  *                   type: string
  *                   description: Error message indicating the reason for unauthorized access
  */
-app.post('/registerHost', async (req, res) => {
-  let data = req.body;
-  res.send(await registerHost(client, data));
-});
-
 // Function to register a new host
 async function registerHost(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
 
+  console.log('Existing User:', existingUser); // Add this line for debugging
+
   if (existingUser) {
+    console.log('Username already registered'); // Add this line for debugging
     return 'Username already registered';
   }
 
@@ -835,6 +833,7 @@ async function registerHost(client, data) {
   const passwordValidationResult = validatePasswordCriteria(data.password);
 
   if (passwordValidationResult) {
+    console.log('Password criteria not met:', passwordValidationResult); // Add this line for debugging
     return passwordValidationResult;
   }
 
@@ -843,6 +842,7 @@ async function registerHost(client, data) {
 
   // Insert the new host into the collection
   const result = await client.db("assignment").collection("Hosts").insertOne(data);
+  console.log('Host registered'); // Add this line for debugging
   return 'Host registered';
 }
 
