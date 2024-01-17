@@ -448,7 +448,7 @@ app.post('/registerSecurity', verifyToken, async (req, res) => {
  *         description: Unauthorized - Invalid credentials
  */
 
-app.post('/loginSecurity', async (req, res) => {
+app.post('/loginSecurity', limiter, async (req, res) => {
   let data = req.body;
   try {
     const result = await loginSecurity(client, data);
@@ -685,7 +685,7 @@ function generateUniquePassIdentifier() {
  *         description: Unauthorized - Invalid credentials
  */
 
-app.post('/loginHost', async (req, res) => {
+app.post('/loginHost', limiter, async (req, res) => {
   let data = req.body;
   try {
     const result = await loginHost(client, data);
