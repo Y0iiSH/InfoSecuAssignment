@@ -1140,7 +1140,6 @@ function generateToken(userProfile){
 }
 
 
-//Function to register admin
 async function registerAdmin(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
@@ -1155,11 +1154,11 @@ async function registerAdmin(client, data) {
       status: 'error',
       message: 'Password does not meet the criteria for a strong password',
       criteria: {
-        minLength: 8,
-        uppercase: true,
-        lowercase: true,
-        digit: true,
-        specialCharacter: true,
+        minLength: 'At least 8 characters',
+        uppercase: 'At least one uppercase letter',
+        lowercase: 'At least one lowercase letter',
+        digit: 'At least one digit',
+        specialCharacter: 'At least one special character (e.g., !@#$%^&*())',
       },
     };
   }
@@ -1171,6 +1170,7 @@ async function registerAdmin(client, data) {
   const result = await client.db("assignment").collection("Admin").insertOne(data);
   return 'Admin registered';
 }
+
 
 
 
