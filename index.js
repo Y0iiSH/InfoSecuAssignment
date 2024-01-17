@@ -819,7 +819,16 @@ async function loginHost(client, data) {
  */
 
 // Function to register a new host
-async function registerHost(client, data) {
+async function registerHost(client, data, token) {
+  // Validate the token using verifyToken function
+  const isValidToken = verifyToken(token);
+
+  if (!isValidToken) {
+    return {
+      error: 'Unauthorized - Token is missing or invalid',
+    };
+  }
+
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
 
@@ -849,8 +858,10 @@ async function registerHost(client, data) {
 
 app.post('/registerHost', async (req, res) => {
   let data = req.body;
-  res.send(await registerHost(client, data));
+  let token = req.headers.authorization; // Assuming you are passing the token in the Authorization header
+  res.send(await registerHost(client, data, token));
 });
+
 
 
 
