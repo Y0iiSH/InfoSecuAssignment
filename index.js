@@ -390,25 +390,6 @@ app.post('/registerSecurity', verifyToken, async (req, res) => {
   res.send(await registerSecurity(client, mydata));
 });
 
-// Function to handle registration with password hashing
-async function registerSecurity(client, mydata) {
-  const hashedPassword = await bcrypt.hash(mydata.password, 10);
-
-  const result = await client
-    .db('assignment')
-    .collection('Security')
-    .insertOne({
-      username: mydata.username,
-      password: hashedPassword, // Store the hashed password
-      name: mydata.name,
-      email: mydata.email,
-      phoneNumber: mydata.phoneNumber,
-      icNumber: mydata.icNumber,
-      role: mydata.role,
-    });
-
-  return 'Security personnel registration successful';
-}
 
 
 // Swagger documentation for the new endpoint
@@ -1140,27 +1121,6 @@ function generateToken(userProfile){
 }
 
 
-// Mocking a validatePassword function for demonstration purposes
-function validatePassword(password) {
-  const minLength = password.length >= 8;
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasDigit = /\d/.test(password);
-  const hasSpecialCharacter = /[!@#$%^&*()-_=+{};:'",.<>?/\\[\]^_`|~]/.test(password);
-
-  return {
-    isValid: minLength && hasUppercase && hasLowercase && hasDigit && hasSpecialCharacter,
-    criteria: {
-      minLength,
-      hasUppercase,
-      hasLowercase,
-      hasDigit,
-      hasSpecialCharacter,
-    },
-  };
-}
-
-//register Admin
 async function registerAdmin(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
@@ -1169,14 +1129,18 @@ async function registerAdmin(client, data) {
     return 'Username already registered';
   }
 
-  // Validate the provided password
-  const passwordValidation = validatePassword(data.password);
-
-  if (!passwordValidation.isValid) {
+  // Check if the provided password meets strong password criteria
+  if (!isStrongPassword(data.password)) {
     return {
       status: 'error',
       message: 'Password does not meet the criteria for a strong password',
-      criteria: passwordValidation.criteria,
+      criteria: {
+        minLength: 'At least 8 characters',
+        uppercase: 'At least one uppercase letter',
+        lowercase: 'At least one lowercase letter',
+        digit: 'At least one digit',
+        specialCharacter: 'At least one special character (e.g., !@#$%^&*())',
+      },
     };
   }
 
@@ -1186,6 +1150,29 @@ async function registerAdmin(client, data) {
   // Insert the new admin into the collection
   const result = await client.db("assignment").collection("Admin").insertOne(data);
   return 'Admin registered';
+}
+
+async function registerSecurity(client, data) {
+  // Check for existing username
+  const existingUser = await client.db("assignment").collection("Security").findOne({ username: data.username });
+
+  if (existingUser) {
+    return 'Username already registered';
+  }
+
+  // Check if the provided password meets strong password criteria
+  const passwordValidationResult = validatePasswordCriteria(data.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
+  }
+
+  // Encrypt the password
+  data.password = await encryptPassword(data.password);
+
+  // Insert the new security personnel into the collection
+  const result = await client.db("assignment").collection("Security").insertOne(data);
+  return 'Security personnel registered';
 }
 
 
@@ -1202,16 +1189,7 @@ async function decryptPassword(password, compare) {
   return match
 }
 
-//Function to output
-function output(data) {
-  if(data == 'Admin') {
-    return "You are logged in as Admin\n1)register Security\n2)read all data"
-  } else if (data == 'Security') {
-    return "You are logged in as Security\n1)register Visitor\n2)read security and visitor data"
-  } else if (data == 'Visitor') {
-    return "You are logged in as Visitor\n1)check in\n2)check out\n3)read visitor data\n4)update profile\n5)delete account"
-  }
-}
+
 
 //to verify JWT Token
 function verifyToken(req, res, next) {
@@ -1234,35 +1212,33 @@ function verifyToken(req, res, next) {
   });
 }
 
-function isStrongPassword(password) {
-  // Minimum length of 8 characters
-  if (password.length < 8) {
-    return false;
+
+
+function validatePasswordCriteria(password) {
+  const criteria = {
+    minLength: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    digit: /\d/.test(password),
+    specialCharacter: /[!@#$%^&*()_+=\-[\]{};:'",.<>?/\\^_`|~]/.test(password),
+  };
+
+  const hasError = Object.values(criteria).some((criterion) => !criterion);
+
+  if (hasError) {
+    return {
+      status: 'error',
+      message: 'Password does not meet the criteria for a strong password',
+      criteria: {
+        minLength: 'At least 8 characters',
+        uppercase: 'At least one uppercase letter',
+        lowercase: 'At least one lowercase letter',
+        digit: 'At least one digit',
+        specialCharacter: 'At least one special character (e.g., !@#$%^&*())',
+      },
+    };
   }
 
-  // At least one uppercase letter
-  if (!/[A-Z]/.test(password)) {
-    return false;
-  }
-
-  // At least one lowercase letter
-  if (!/[a-z]/.test(password)) {
-    return false;
-  }
-
-  // At least one digit
-  if (!/\d/.test(password)) {
-    return false;
-  }
-
-  // At least one special character
-  if (!/[!@#$%^&*()-_=+{};:'",.<>?/\\[\]^_`|~]/.test(password)) {
-    return false;
-  }
-
-  // All criteria met
-  return true;
+  return null; // No error
 }
-
-
 
