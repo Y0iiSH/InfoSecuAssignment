@@ -2,6 +2,7 @@ const { MongoClient, ServerApiVersion, MongoCursorInUseError } = require('mongod
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -104,9 +105,17 @@ async function run() {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-  app.post('/registerAdmin', async (req, res) => {
+  
+  
+  // Apply the limiter middleware to the loginAdmin route
+  app.post('/loginAdmin', limiter, async (req, res) => {
     let data = req.body;
-    res.send(await registerAdmin(client, data));
+    try {
+      const result = await loginAdmin(client, data);
+      res.status(200).json(result);
+    } catch (error) {
+      res.status(401).json({ error: error.message });
+    }
   });
 
   /**
@@ -1225,3 +1234,8 @@ function validatePasswordCriteria(password) {
   return null; // No error
 }
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+});
