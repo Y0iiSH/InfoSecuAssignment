@@ -147,7 +147,7 @@ async function run() {
  */
   app.post('/loginAdmin', async (req, res) => {
     let data = req.body;
-    res.send(await login(client, data));
+    res.send(await loginAdmin(client, data));
   });
 
 
@@ -1153,6 +1153,7 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
+//register Host
 async function registerHost(client, hostData) {
   // Check for existing username
   const existingUser = await client.db('assignment').collection('Hosts').findOne({ username: hostData.username });
@@ -1172,10 +1173,7 @@ async function registerHost(client, hostData) {
   hostData.password = await encryptPassword(hostData.password);
 
   // Insert the new host into the collection
-  const result = await client
-    .db('assignment')
-    .collection('Hosts')
-    .insertOne({
+  const result = await client.db('assignment').collection('Hosts').insertOne({
       username: hostData.username,
       password: hostData.password, // Store the encrypted password
       name: hostData.name,
@@ -1185,6 +1183,32 @@ async function registerHost(client, hostData) {
     });
 
   return 'Host registration successful';
+}
+
+
+async function loginAdmin(client, data) {
+  // Implement your authentication logic here
+  // For example, you can query the MongoDB collection to verify credentials
+
+  const collectionAdmin = client.db('assignment').collection('Admin');
+  const admin = await collectionAdmin.findOne({ username: data.username });
+
+  if (admin) {
+    // Compare the provided password with the stored hashed password
+    const passwordMatch = await bcrypt.compare(data.password, admin.password);
+
+    if (passwordMatch) {
+      // Authentication successful, generate JWT token
+      const token = generateToken(admin);
+      return { token: token };
+    } else {
+      // Password does not match
+      throw new Error('Invalid credentials');
+    }
+  } else {
+    // Username not found
+    throw new Error('Invalid credentials');
+  }
 }
 
 //Function to encrypt password
