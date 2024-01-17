@@ -11,7 +11,7 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'VMS API',
+            title: 'Vistor Management System',
             version: '1.0.0'
         },
         components: {  // Add 'components' section
