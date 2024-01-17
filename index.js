@@ -793,24 +793,8 @@ app.post('/registerHost', verifyToken, async (req, res) => {
   res.send(await registerHost(client, hostData));
 });
 
-// Function to handle host registration with password hashing
-async function registerHost(client, hostData) {
-  const hashedPassword = await bcrypt.hash(hostData.password, 10);
 
-  const result = await client
-    .db('assignment')
-    .collection('Hosts')
-    .insertOne({
-      username: hostData.username,
-      password: hashedPassword, // Store the hashed password
-      name: hostData.name,
-      phoneNumber: hostData.phoneNumber,
-      icNumber: hostData.icNumber, // Add IC number information
-      role: hostData.role, // Add the role information
-    });
 
-  return 'Host registration successful';
-}
 
 /**
  * @swagger
@@ -1120,7 +1104,7 @@ function generateToken(userProfile){
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
-
+//register Admin
 async function registerAdmin(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
@@ -1130,18 +1114,10 @@ async function registerAdmin(client, data) {
   }
 
   // Check if the provided password meets strong password criteria
-  if (!isStrongPassword(data.password)) {
-    return {
-      status: 'error',
-      message: 'Password does not meet the criteria for a strong password',
-      criteria: {
-        minLength: 'At least 8 characters',
-        uppercase: 'At least one uppercase letter',
-        lowercase: 'At least one lowercase letter',
-        digit: 'At least one digit',
-        specialCharacter: 'At least one special character (e.g., !@#$%^&*())',
-      },
-    };
+  const passwordValidationResult = validatePasswordCriteria(data.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
   }
 
   // Encrypt the password
@@ -1152,6 +1128,8 @@ async function registerAdmin(client, data) {
   return 'Admin registered';
 }
 
+
+//register security
 async function registerSecurity(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Security").findOne({ username: data.username });
@@ -1175,6 +1153,39 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
+async function registerHost(client, hostData) {
+  // Check for existing username
+  const existingUser = await client.db('assignment').collection('Hosts').findOne({ username: hostData.username });
+
+  if (existingUser) {
+    return 'Username already registered';
+  }
+
+  // Check if the provided password meets strong password criteria
+  const passwordValidationResult = validatePasswordCriteria(hostData.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
+  }
+
+  // Encrypt the password
+  hostData.password = await encryptPassword(hostData.password);
+
+  // Insert the new host into the collection
+  const result = await client
+    .db('assignment')
+    .collection('Hosts')
+    .insertOne({
+      username: hostData.username,
+      password: hostData.password, // Store the encrypted password
+      name: hostData.name,
+      phoneNumber: hostData.phoneNumber,
+      icNumber: hostData.icNumber, // Add IC number information
+      role: hostData.role, // Add the role information
+    });
+
+  return 'Host registration successful';
+}
 
 //Function to encrypt password
 async function encryptPassword(password) {
