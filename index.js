@@ -821,7 +821,8 @@ app.post('/registerHost', async (req, res) => {
   let data = req.body;
   res.send(await registerHost(client, data));
 });
-//function register Host
+
+// Function to register a new host
 async function registerHost(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
@@ -840,7 +841,7 @@ async function registerHost(client, data) {
   // Encrypt the password
   data.password = await encryptPassword(data.password);
 
-  // Insert the new security personnel into the collection
+  // Insert the new host into the collection
   const result = await client.db("assignment").collection("Hosts").insertOne(data);
   return 'Host registered';
 }
