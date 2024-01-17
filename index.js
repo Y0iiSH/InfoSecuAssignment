@@ -1147,16 +1147,29 @@ async function registerAdmin(client, data) {
 
   if (existingUser) {
     return 'Username already registered';
-  } else if (!isStrongPassword(data.password)) {
-    return 'Password does not meet the criteria for a strong password';
-  } else {
-    // Encrypt the password
-    data.password = await encryptPassword(data.password);
-
-    // Insert the new admin into the collection
-    const result = await client.db("assignment").collection("Admin").insertOne(data);
-    return 'Admin registered';
   }
+
+  // Check if the provided password meets strong password criteria
+  if (!isStrongPassword(data.password)) {
+    return {
+      status: 'error',
+      message: 'Password does not meet the criteria for a strong password',
+      criteria: {
+        minLength: 8,
+        uppercase: true,
+        lowercase: true,
+        digit: true,
+        specialCharacter: true,
+      },
+    };
+  }
+
+  // Encrypt the password
+  data.password = await encryptPassword(data.password);
+
+  // Insert the new admin into the collection
+  const result = await client.db("assignment").collection("Admin").insertOne(data);
+  return 'Admin registered';
 }
 
 
