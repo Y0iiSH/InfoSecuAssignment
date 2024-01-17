@@ -796,14 +796,43 @@ async function loginHost(client, data) {
  *           text/plain:
  *             schema:
  *               type: string
+ *       '400':
+ *         description: Bad Request - Invalid input or password criteria not met
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message indicating the reason for bad request
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message indicating the reason for unauthorized access
  */
 app.post('/registerHost', verifyToken, async (req, res) => {
   let hostData = req.body;
   hostData.role = 'host'; // Add role information
-  res.send(await registerHost(client, hostData));
+  const registrationResult = await registerHost(client, hostData);
+  
+  if (registrationResult === 'Host registration successful') {
+    res.status(200).send(registrationResult);
+  } else if (typeof registrationResult === 'object' && registrationResult.status === 'error') {
+    res.status(400).json({ error: registrationResult.message });
+  } else {
+    res.status(401).json({ error: registrationResult });
+  }
 });
+
+
+
 
 
 
@@ -1165,27 +1194,31 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
-//register Host
+//function register Host
 async function registerHost(client, hostData) {
-  // Check for existing username
-  const existingUser = await client.db('assignment').collection('Hosts').findOne({ username: hostData.username });
+  try {
+    // Check for existing username
+    const existingUser = await client.db('assignment').collection('Hosts').findOne({ username: hostData.username });
 
-  if (existingUser) {
-    return 'Username already registered';
-  }
+    if (existingUser) {
+      return 'Username already registered';
+    }
 
-  // Check if the provided password meets strong password criteria
-  const passwordValidationResult = validatePasswordCriteria(hostData.password);
+    // Check if the provided password meets strong password criteria
+    const passwordValidationResult = validatePasswordCriteria(hostData.password);
 
-  if (passwordValidationResult) {
-    return passwordValidationResult;
-  }
+    if (passwordValidationResult) {
+      return {
+        status: 'error',
+        message: passwordValidationResult,
+      };
+    }
 
-  // Encrypt the password
-  hostData.password = await encryptPassword(hostData.password);
+    // Encrypt the password
+    hostData.password = await encryptPassword(hostData.password);
 
-  // Insert the new host into the collection
-  const result = await client.db('assignment').collection('Hosts').insertOne({
+    // Insert the new host into the collection
+    await client.db('assignment').collection('Hosts').insertOne({
       username: hostData.username,
       password: hostData.password, // Store the encrypted password
       name: hostData.name,
@@ -1194,7 +1227,11 @@ async function registerHost(client, hostData) {
       role: hostData.role, // Add the role information
     });
 
-  return 'Host registration successful';
+    return 'Host registration successful';
+  } catch (error) {
+    console.error('Error during host registration:', error);
+    return 'Error during host registration';
+  }
 }
 
 
