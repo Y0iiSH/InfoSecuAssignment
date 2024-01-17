@@ -1140,6 +1140,27 @@ function generateToken(userProfile){
 }
 
 
+// Mocking a validatePassword function for demonstration purposes
+function validatePassword(password) {
+  const minLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecialCharacter = /[!@#$%^&*()-_=+{};:'",.<>?/\\[\]^_`|~]/.test(password);
+
+  return {
+    isValid: minLength && hasUppercase && hasLowercase && hasDigit && hasSpecialCharacter,
+    criteria: {
+      minLength,
+      hasUppercase,
+      hasLowercase,
+      hasDigit,
+      hasSpecialCharacter,
+    },
+  };
+}
+
+//register Admin
 async function registerAdmin(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
@@ -1148,18 +1169,14 @@ async function registerAdmin(client, data) {
     return 'Username already registered';
   }
 
-  // Check if the provided password meets strong password criteria
-  if (!isStrongPassword(data.password)) {
+  // Validate the provided password
+  const passwordValidation = validatePassword(data.password);
+
+  if (!passwordValidation.isValid) {
     return {
       status: 'error',
       message: 'Password does not meet the criteria for a strong password',
-      criteria: {
-        minLength: 'At least 8 characters',
-        uppercase: 'At least one uppercase letter',
-        lowercase: 'At least one lowercase letter',
-        digit: 'At least one digit',
-        specialCharacter: 'At least one special character (e.g., !@#$%^&*())',
-      },
+      criteria: passwordValidation.criteria,
     };
   }
 
@@ -1170,10 +1187,6 @@ async function registerAdmin(client, data) {
   const result = await client.db("assignment").collection("Admin").insertOne(data);
   return 'Admin registered';
 }
-
-
-
-
 
 
 //Function to encrypt password
