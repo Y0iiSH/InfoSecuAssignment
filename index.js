@@ -503,8 +503,7 @@ async function loginSecurity(client, data) {
  *             schema:
  *               type: object
  *               properties:
- *                 icNumber:
- *                   type: string
+ *         
  *                 passIdentifier:
  *                   type: string
  *                 name:
@@ -514,6 +513,8 @@ async function loginSecurity(client, data) {
  *                 checkInTime:
  *                   type: string
  *                 issuedBy:
+ *                   type: string
+ *                 hostPhoneNumber:  // Add the host's phone number
  *                   type: string
  *       '404':
  *         description: Visitor pass not found
@@ -525,28 +526,39 @@ app.get('/retrieveVisitorPass', async (req, res) => {
   const passInfo = await retrieveVisitorPassByICNumber(client, icNumber);
 
   if (passInfo) {
+    // Fetch host's phone number using the host's username
+    const hostInfo = await getHostInfoByUsername(client, passInfo.issuedBy);
+
     res.json({
-      icNumber: passInfo.icNumber,
       passIdentifier: passInfo.passIdentifier,
       name: passInfo.name,
       purpose: passInfo.purpose,
-      checkInTime: passInfo.checkInTime.toISOString(), // Adjust the format as needed
-      issuedBy: passInfo.issuedBy // Add the issuedBy information
+      icNumber: passInfo.icNumber,
+      checkInTime: passInfo.checkInTime.toISOString(),
+      issuedBy: passInfo.issuedBy,
+      hostPhoneNumber: hostInfo ? hostInfo.phoneNumber : 'N/A' // Display 'N/A' if host info not found
     });
   } else {
     res.status(404).send('Visitor pass not found');
   }
 });
 
+// Function to retrieve host information by username
+async function getHostInfoByUsername(client, username) {
+  const hostsCollection = client.db('assignment').collection('Hosts');
+  const hostInfo = await hostsCollection.findOne({ username });
+
+  return hostInfo;
+}
+
 // Function to retrieve visitor pass information by IC number
 async function retrieveVisitorPassByICNumber(client, icNumber) {
   const recordsCollection = client.db('assignment').collection('Records');
-
-  // Retrieve the visitor pass information based on the IC number
   const passInfo = await recordsCollection.findOne({ icNumber });
 
   return passInfo;
 }
+
 
 
 /**
