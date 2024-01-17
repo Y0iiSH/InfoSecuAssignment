@@ -819,16 +819,9 @@ async function loginHost(client, data) {
  */
 app.post('/registerHost', async (req, res) => {
   let data = req.body;
-  const registrationResult = await registerHost(client, data);
-
-  if (registrationResult === 'Host registered') {
-    res.status(200).send(registrationResult);
-  } else {
-    res.status(400).json({ error: registrationResult });
-  }
+  res.send(await registerHost(client, data));
 });
-
-// Function to register Host
+//function register Host
 async function registerHost(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
@@ -851,7 +844,6 @@ async function registerHost(client, data) {
   const result = await client.db("assignment").collection("Hosts").insertOne(data);
   return 'Host registered';
 }
-
 
 
 
