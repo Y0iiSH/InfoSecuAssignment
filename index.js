@@ -859,25 +859,6 @@ app.post('/test/registerHost', async (req, res) => {
   res.send(await registerHost(client, hostData));
 });
 
-// Function to handle host registration with password hashing
-async function registerHost(client, hostData) {
-  const hashedPassword = await bcrypt.hash(hostData.password, 10);
-
-  const result = await client
-    .db('assignment')
-    .collection('Hosts')
-    .insertOne({
-      username: hostData.username,
-      password: hashedPassword, // Store the hashed password
-      name: hostData.name,
-      phoneNumber: hostData.phoneNumber,
-      icNumber: hostData.icNumber, // Add IC number information
-      role: hostData.role, // Add the role information
-    });
-
-  return 'Host registration successful';
-}
-
 
 
 /**
