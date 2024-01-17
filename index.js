@@ -760,7 +760,7 @@ async function loginHost(client, data) {
  * @swagger
  * /registerHost:
  *   post:
- *     summary: Register a new host
+ *     summary: Register a host
  *     description: Register a new host with required details
  *     tags:
  *       - Security
@@ -779,49 +779,39 @@ async function loginHost(client, data) {
  *                 type: string
  *               name:
  *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
  *               phoneNumber:
  *                 type: string
  *               icNumber:
  *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - security
  *             required:
  *               - username
  *               - password
  *               - name
+ *               - email
  *               - phoneNumber
  *               - icNumber
+ *               - role
  *     responses:
  *       '200':
- *         description: Host registration successful
+ *         description: Security personnel registration successful
  *         content:
  *           text/plain:
  *             schema:
  *               type: string
- *       '400':
- *         description: Bad Request - Invalid input or password criteria not met
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   description: Error message indicating the reason for bad request
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   description: Error message indicating the reason for unauthorized access
  */
-app.post('/registerHost', async (req, res) => {
-  let data = req.body;
-  res.send(await registerHost(client, data));
+app.post('/registerHost', verifyToken, async (req, res) => {
+  let mydata = req.body;
+  res.send(await registerHost(client, mydata));
 });
-
 
 
 /**
@@ -1181,10 +1171,10 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
-//function register Host
+//register host
 async function registerHost(client, data) {
   // Check for existing username
-  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
+  const existingUser = await client.db("assignment").collection("Host").findOne({ username: data.username });
 
   if (existingUser) {
     return 'Username already registered';
