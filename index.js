@@ -819,8 +819,39 @@ async function loginHost(client, data) {
  */
 app.post('/registerHost', async (req, res) => {
   let data = req.body;
-  res.send(await registerHost(client, data));
+  const registrationResult = await registerHost(client, data);
+
+  if (registrationResult === 'Host registered') {
+    res.status(200).send(registrationResult);
+  } else {
+    res.status(400).json({ error: registrationResult });
+  }
 });
+
+// Function to register Host
+async function registerHost(client, data) {
+  // Check for existing username
+  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
+
+  if (existingUser) {
+    return 'Username already registered';
+  }
+
+  // Check if the provided password meets strong password criteria
+  const passwordValidationResult = validatePasswordCriteria(data.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
+  }
+
+  // Encrypt the password
+  data.password = await encryptPassword(data.password);
+
+  // Insert the new security personnel into the collection
+  const result = await client.db("assignment").collection("Hosts").insertOne(data);
+  return 'Host registered';
+}
+
 
 
 
@@ -1185,29 +1216,7 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
-//function register Host
-async function registerHost(client, data) {
-  // Check for existing username
-  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
 
-  if (existingUser) {
-    return 'Username already registered';
-  }
-
-  // Check if the provided password meets strong password criteria
-  const passwordValidationResult = validatePasswordCriteria(data.password);
-
-  if (passwordValidationResult) {
-    return passwordValidationResult;
-  }
-
-  // Encrypt the password
-  data.password = await encryptPassword(data.password);
-
-  // Insert the new security personnel into the collection
-  const result = await client.db("assignment").collection("Hosts").insertOne(data);
-  return 'Host registered';
-}
 
 
 async function loginAdmin(client, data) {
