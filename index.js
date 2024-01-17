@@ -498,19 +498,16 @@ async function loginSecurity(client, data) {
  *             schema:
  *               type: object
  *               properties:
- *         
  *                 passIdentifier:
  *                   type: string
  *                 name:
- *                   type: string
- *                 purpose:
  *                   type: string
  *                 checkInTime:
  *                   type: string
  *                 issuedBy:
  *                   type: string
- *                 hostPhoneNumber:  // Add the host's phone number
- *                   type: string
+ *                 hostPhoneNumber:
+ *                   type: string  // Add the host's phone number
  *       '404':
  *         description: Visitor pass not found
  */
@@ -527,11 +524,9 @@ app.get('/retrieveVisitorPass', async (req, res) => {
     res.json({
       passIdentifier: passInfo.passIdentifier,
       name: passInfo.name,
-      purpose: passInfo.purpose,
-      icNumber: passInfo.icNumber,
       checkInTime: passInfo.checkInTime.toISOString(),
       issuedBy: passInfo.issuedBy,
-      hostPhoneNumber: hostInfo ? hostInfo.phoneNumber : 'N/A' // Display 'N/A' if host info not found
+      hostPhoneNumber: hostInfo ? hostInfo.phoneNumber : 'N/A', // Display 'N/A' if host info not found
     });
   } else {
     res.status(404).send('Visitor pass not found');
