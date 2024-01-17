@@ -976,28 +976,30 @@ async function issueVisitorPass(client, hostData, visitorData) {
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  */
-app.get('/viewAllVisitors', verifyToken, async (req, res) => {
+ app.get('/viewAllVisitors', verifyToken, async (req, res) => {
   // Ensure that the user is a host
   const hostData = req.user;
   if (hostData.role !== 'host') {
     return res.status(401).json({ error: 'Unauthorized - Only hosts can view all visitors' });
   }
 
-  // Retrieve all visitor records from the collection
-  const allVisitors = await getAllVisitors(client);
+  // Retrieve all visitor records from the collection for the specific host
+  const allVisitors = await getAllVisitors(client, hostData.username);
 
   res.status(200).json(allVisitors);
 });
 
+
 // Function to retrieve all visitor records from the collection
-async function getAllVisitors(client) {
+async function getAllVisitors(client, hostUsername) {
   const recordsCollection = client.db('assignment').collection('Records');
 
-  // Retrieve all visitor records from the collection
-  const allVisitors = await recordsCollection.find().toArray();
+  // Retrieve all visitor records where issuedBy matches the host's username
+  const allVisitors = await recordsCollection.find({ issuedBy: hostUsername }).toArray();
 
   return allVisitors;
 }
+
 
 /**
  * @swagger
