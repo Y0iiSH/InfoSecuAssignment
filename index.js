@@ -341,9 +341,6 @@ function getCollectionName(role) {
 }
 
 
-
-
-
 // Swagger documentation for the new endpoint
 /**
  * @swagger
@@ -477,8 +474,6 @@ async function loginSecurity(client, data) {
   }
 }
   
-
-
 
 /**
  * @swagger
