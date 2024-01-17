@@ -341,6 +341,69 @@ function getCollectionName(role) {
 }
 
 
+
+
+
+// Swagger documentation for the new endpoint
+/**
+ * @swagger
+ * /registerSecurity:
+ *   post:
+ *     summary: Register a new security personnel
+ *     description: Register a new security personnel with required details
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phoneNumber:
+ *                 type: string
+ *               icNumber:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - security
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *               - icNumber
+ *               - role
+ *     responses:
+ *       '200':
+ *         description: Security personnel registration successful
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ */
+app.post('/registerSecurity', verifyToken, async (req, res) => {
+  let mydata = req.body;
+  res.send(await registerSecurity(client, mydata));
+});
+
+
+
 // Swagger documentation for the new endpoint
 /**
  * @swagger
@@ -754,49 +817,10 @@ async function loginHost(client, data) {
  *                   type: string
  *                   description: Error message indicating the reason for unauthorized access
  */
-
-app.post('/registerSecurity', verifyToken, async (req, res) => {
-  let mydata = req.body;
-  res.send(await registerSecurity(client, mydata));
+app.post('/registerHost', async (req, res) => {
+  let data = req.body;
+  res.send(await registerHost(client, data));
 });
-
-// Function to register a new host
-async function registerHost(client, data, token) {
-  // Validate the token using verifyToken function
-  const isValidToken = verifyToken(token);
-
-  if (!isValidToken) {
-    return {
-      error: 'Unauthorized - Token is missing or invalid',
-    };
-  }
-
-  // Check for existing username
-  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
-
-  console.log('Existing User:', existingUser); // Add this line for debugging
-
-  if (existingUser) {
-    console.log('Username already registered'); // Add this line for debugging
-    return 'Username already registered';
-  }
-
-  // Check if the provided password meets strong password criteria
-  const passwordValidationResult = validatePasswordCriteria(data.password);
-
-  if (passwordValidationResult) {
-    console.log('Password criteria not met:', passwordValidationResult); // Add this line for debugging
-    return passwordValidationResult;
-  }
-
-  // Encrypt the password
-  data.password = await encryptPassword(data.password);
-
-  // Insert the new host into the collection
-  const result = await client.db("assignment").collection("Hosts").insertOne(data);
-  console.log('Host registered'); // Add this line for debugging
-  return 'Host registered';
-}
 
 
 
@@ -1133,7 +1157,7 @@ async function registerAdmin(client, data) {
 }
 
 
-//function register security
+//register security
 async function registerSecurity(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Security").findOne({ username: data.username });
@@ -1157,17 +1181,8 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
-// Function register host
-async function registerHost(client, data, token) {
-  // Validate the token using verifyToken function
-  const isValidToken = verifyToken(token);
-
-  if (!isValidToken) {
-    return {
-      error: 'Unauthorized - Token is missing or invalid',
-    };
-  }
-
+//function register Host
+async function registerHost(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
 
@@ -1185,11 +1200,10 @@ async function registerHost(client, data, token) {
   // Encrypt the password
   data.password = await encryptPassword(data.password);
 
-  // Insert the new host into the collection
+  // Insert the new security personnel into the collection
   const result = await client.db("assignment").collection("Hosts").insertOne(data);
   return 'Host registered';
 }
-
 
 
 async function loginAdmin(client, data) {
