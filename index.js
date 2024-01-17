@@ -789,7 +789,7 @@ async function loginHost(client, data) {
  *               role:
  *                 type: string
  *                 enum:
- *                   - security
+ *                   - host
  *             required:
  *               - username
  *               - password
