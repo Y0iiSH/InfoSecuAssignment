@@ -572,17 +572,11 @@ async function retrieveVisitorPassByICNumber(client, icNumber) {
  *                 type: string
  *               icNumber:
  *                 type: string
- *               company:
- *                 type: string
- *               vehicleNumber:
- *                 type: string
  *               purpose:
  *                 type: string
  *             required:
  *               - name
  *               - icNumber
- *               - company
- *               - vehicleNumber
  *               - purpose
  *     responses:
  *       '200':
@@ -604,46 +598,6 @@ app.post('/issueVisitorPass', verifyToken, async (req, res) => {
   res.send(result);
 });
 
-// Function to issue a visitor pass
-async function issueVisitorPass(client, securityData, visitorData) {
-  const recordsCollection = client.db('assignment').collection('Records');
-
-  // Check if the visitor already has a pass issued
-  const existingRecord = await recordsCollection.findOne({ icNumber: visitorData.icNumber, checkOutTime: null });
-
-  if (existingRecord) {
-    return 'Visitor already has an active pass. Cannot issue another pass until checked out.';
-  }
-
-  // Generate a unique passIdentifier for the visitor pass
-  const passIdentifier = generateUniquePassIdentifier();
-
-  const currentCheckInTime = new Date();
-
-  const recordData = {
-    icNumber: visitorData.icNumber,
-    passIdentifier: passIdentifier,
-    name: visitorData.name,
-    company: visitorData.company,
-    vehicleNumber: visitorData.vehicleNumber,
-    purpose: visitorData.purpose,
-    checkInTime: currentCheckInTime,
-    issuedBy: securityData.username // Add the issuedBy information
-  };
-
-  // Insert the visitor record into the database
-  await recordsCollection.insertOne(recordData);
-
-  return `Visitor pass issued successfully by ${securityData.username}. Pass Identifier: ${passIdentifier}`;
-}
-
-// Function to generate a unique passIdentifier
-function generateUniquePassIdentifier() {
-  // Implement your logic to generate a unique passIdentifier (e.g., using timestamps, random numbers, etc.)
-  // For simplicity, let's use the current timestamp in milliseconds
-  return Date.now().toString();
-}
-
 
 // Function to issue a visitor pass
 async function issueVisitorPass(client, securityData, visitorData) {
@@ -665,8 +619,6 @@ async function issueVisitorPass(client, securityData, visitorData) {
     icNumber: visitorData.icNumber,
     passIdentifier: passIdentifier,
     name: visitorData.name,
-    company: visitorData.company,
-    vehicleNumber: visitorData.vehicleNumber,
     purpose: visitorData.purpose,
     checkInTime: currentCheckInTime,
     issuedBy: securityData.username // Add the issuedBy information
@@ -684,6 +636,7 @@ function generateUniquePassIdentifier() {
   // For simplicity, let's use the current timestamp in milliseconds
   return Date.now().toString();
 }
+
 
 // Swagger documentation for the new endpoint
 /**
