@@ -817,6 +817,7 @@ async function loginHost(client, data) {
  *                   type: string
  *                   description: Error message indicating the reason for unauthorized access
  */
+
 // Function to register a new host
 async function registerHost(client, data) {
   // Check for existing username
@@ -845,6 +846,11 @@ async function registerHost(client, data) {
   console.log('Host registered'); // Add this line for debugging
   return 'Host registered';
 }
+
+app.post('/registerHost', async (req, res) => {
+  let data = req.body;
+  res.send(await registerHost(client, data));
+});
 
 
 
