@@ -144,12 +144,24 @@ async function run() {
  *                   description: Authentication token for the logged-in admin
  *       '401':
  *         description: Unauthorized - Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message indicating the reason for unauthorized access
  */
-  app.post('/loginAdmin', async (req, res) => {
-    let data = req.body;
-    res.send(await loginAdmin(client, data));
-  });
-
+app.post('/loginAdmin', async (req, res) => {
+  let data = req.body;
+  try {
+    const result = await loginAdmin(client, data);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
 
 /**
  * @swagger
