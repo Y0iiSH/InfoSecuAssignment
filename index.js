@@ -344,13 +344,12 @@ function getCollectionName(role) {
 
 
 
-// Swagger documentation for the new endpoint
 /**
  * @swagger
- * /registerSecurity:
+ * /registerHost:
  *   post:
- *     summary: Register a new security personnel
- *     description: Register a new security personnel with required details
+ *     summary: Register a new host
+ *     description: Register a new host with required details
  *     tags:
  *       - Security
  *     security:
@@ -368,38 +367,82 @@ function getCollectionName(role) {
  *                 type: string
  *               name:
  *                 type: string
- *               email:
- *                 type: string
- *                 format: email
  *               phoneNumber:
  *                 type: string
  *               icNumber:
  *                 type: string
- *               role:
- *                 type: string
- *                 enum:
- *                   - security
  *             required:
  *               - username
  *               - password
  *               - name
- *               - email
  *               - phoneNumber
  *               - icNumber
- *               - role
  *     responses:
  *       '200':
- *         description: Security personnel registration successful
+ *         description: Host registration successful
  *         content:
  *           text/plain:
  *             schema:
  *               type: string
+ *       '400':
+ *         description: Bad Request - Invalid input or password criteria not met
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message indicating the reason for bad request
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message indicating the reason for unauthorized access
  */
-app.post('/registerSecurity', verifyToken, async (req, res) => {
-  let mydata = req.body;
-  res.send(await registerSecurity(client, mydata));
+
+// Function to register a new host
+async function registerHost(client, data, token) {
+  // Validate the token using verifyToken function
+  const isValidToken = verifyToken(token);
+
+  if (!isValidToken) {
+    return {
+      error: 'Unauthorized - Token is missing or invalid',
+    };
+  }
+
+  // Check for existing username
+  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
+
+  if (existingUser) {
+    return 'Username already registered';
+  }
+
+  // Check if the provided password meets strong password criteria
+  const passwordValidationResult = validatePasswordCriteria(data.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
+  }
+
+  // Encrypt the password
+  data.password = await encryptPassword(data.password);
+
+  // Insert the new host into the collection
+  const result = await client.db("assignment").collection("Hosts").insertOne(data);
+  return 'Host registered';
+}
+
+app.post('/registerHost', verifyToken, async (req, res) => {
+  let data = req.body;
+  let token = req.headers.authorization; // Assuming you are passing the token in the Authorization header
+  res.send(await registerHost(client, data, token));
 });
 
 
@@ -818,6 +861,11 @@ async function loginHost(client, data) {
  *                   description: Error message indicating the reason for unauthorized access
  */
 
+app.post('/registerSecurity', verifyToken, async (req, res) => {
+  let mydata = req.body;
+  res.send(await registerSecurity(client, mydata));
+});
+
 // Function to register a new host
 async function registerHost(client, data, token) {
   // Validate the token using verifyToken function
@@ -856,11 +904,6 @@ async function registerHost(client, data, token) {
   return 'Host registered';
 }
 
-app.post('/registerHost', async (req, res) => {
-  let data = req.body;
-  let token = req.headers.authorization; // Assuming you are passing the token in the Authorization header
-  res.send(await registerHost(client, data, token));
-});
 
 
 
@@ -1202,7 +1245,7 @@ async function registerAdmin(client, data) {
 }
 
 
-//register security
+//function register security
 async function registerSecurity(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Security").findOne({ username: data.username });
