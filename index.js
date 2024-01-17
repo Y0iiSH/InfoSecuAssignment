@@ -817,18 +817,9 @@ async function loginHost(client, data) {
  *                   type: string
  *                   description: Error message indicating the reason for unauthorized access
  */
-app.post('/registerHost', verifyToken, async (req, res) => {
-  let hostData = req.body;
-  hostData.role = 'host'; // Add role information
-  const registrationResult = await registerHost(client, hostData);
-  
-  if (registrationResult === 'Host registration successful') {
-    res.status(200).send(registrationResult);
-  } else if (typeof registrationResult === 'object' && registrationResult.status === 'error') {
-    res.status(400).json({ error: registrationResult.message });
-  } else {
-    res.status(401).json({ error: registrationResult });
-  }
+app.post('/registerHost', async (req, res) => {
+  let data = req.body;
+  res.send(await registerHost(client, data));
 });
 
 
@@ -1195,43 +1186,27 @@ async function registerSecurity(client, data) {
 }
 
 //function register Host
-async function registerHost(client, hostData) {
-  try {
-    // Check for existing username
-    const existingUser = await client.db('assignment').collection('Hosts').findOne({ username: hostData.username });
+async function registerHost(client, data) {
+  // Check for existing username
+  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
 
-    if (existingUser) {
-      return 'Username already registered';
-    }
-
-    // Check if the provided password meets strong password criteria
-    const passwordValidationResult = validatePasswordCriteria(hostData.password);
-
-    if (passwordValidationResult) {
-      return {
-        status: 'error',
-        message: passwordValidationResult,
-      };
-    }
-
-    // Encrypt the password
-    hostData.password = await encryptPassword(hostData.password);
-
-    // Insert the new host into the collection
-    await client.db('assignment').collection('Hosts').insertOne({
-      username: hostData.username,
-      password: hostData.password, // Store the encrypted password
-      name: hostData.name,
-      phoneNumber: hostData.phoneNumber,
-      icNumber: hostData.icNumber, // Add IC number information
-      role: hostData.role, // Add the role information
-    });
-
-    return 'Host registration successful';
-  } catch (error) {
-    console.error('Error during host registration:', error);
-    return 'Error during host registration';
+  if (existingUser) {
+    return 'Username already registered';
   }
+
+  // Check if the provided password meets strong password criteria
+  const passwordValidationResult = validatePasswordCriteria(data.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
+  }
+
+  // Encrypt the password
+  data.password = await encryptPassword(data.password);
+
+  // Insert the new security personnel into the collection
+  const result = await client.db("assignment").collection("Hosts").insertOne(data);
+  return 'Host registered';
 }
 
 
