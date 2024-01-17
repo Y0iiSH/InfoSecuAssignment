@@ -341,112 +341,6 @@ function getCollectionName(role) {
 }
 
 
-
-
-
-/**
- * @swagger
- * /registerHost:
- *   post:
- *     summary: Register a new host
- *     description: Register a new host with required details
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               phoneNumber:
- *                 type: string
- *               icNumber:
- *                 type: string
- *             required:
- *               - username
- *               - password
- *               - name
- *               - phoneNumber
- *               - icNumber
- *     responses:
- *       '200':
- *         description: Host registration successful
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *       '400':
- *         description: Bad Request - Invalid input or password criteria not met
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   description: Error message indicating the reason for bad request
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   description: Error message indicating the reason for unauthorized access
- */
-
-// Function to register a new host
-async function registerHost(client, data, token) {
-  // Validate the token using verifyToken function
-  const isValidToken = verifyToken(token);
-
-  if (!isValidToken) {
-    return {
-      error: 'Unauthorized - Token is missing or invalid',
-    };
-  }
-
-  // Check for existing username
-  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
-
-  if (existingUser) {
-    return 'Username already registered';
-  }
-
-  // Check if the provided password meets strong password criteria
-  const passwordValidationResult = validatePasswordCriteria(data.password);
-
-  if (passwordValidationResult) {
-    return passwordValidationResult;
-  }
-
-  // Encrypt the password
-  data.password = await encryptPassword(data.password);
-
-  // Insert the new host into the collection
-  const result = await client.db("assignment").collection("Hosts").insertOne(data);
-  return 'Host registered';
-}
-
-app.post('/registerHost', verifyToken, async (req, res) => {
-  let data = req.body;
-  let token = req.headers.authorization; // Assuming you are passing the token in the Authorization header
-  res.send(await registerHost(client, data, token));
-});
-
-
-
 // Swagger documentation for the new endpoint
 /**
  * @swagger
@@ -906,12 +800,6 @@ async function registerHost(client, data, token) {
 
 
 
-
-
-
-
-
-
 /**
  * @swagger
  * /test/registerHost:
@@ -1269,6 +1157,38 @@ async function registerSecurity(client, data) {
   return 'Security personnel registered';
 }
 
+// Function register host
+async function registerHost(client, data, token) {
+  // Validate the token using verifyToken function
+  const isValidToken = verifyToken(token);
+
+  if (!isValidToken) {
+    return {
+      error: 'Unauthorized - Token is missing or invalid',
+    };
+  }
+
+  // Check for existing username
+  const existingUser = await client.db("assignment").collection("Hosts").findOne({ username: data.username });
+
+  if (existingUser) {
+    return 'Username already registered';
+  }
+
+  // Check if the provided password meets strong password criteria
+  const passwordValidationResult = validatePasswordCriteria(data.password);
+
+  if (passwordValidationResult) {
+    return passwordValidationResult;
+  }
+
+  // Encrypt the password
+  data.password = await encryptPassword(data.password);
+
+  // Insert the new host into the collection
+  const result = await client.db("assignment").collection("Hosts").insertOne(data);
+  return 'Host registered';
+}
 
 
 
