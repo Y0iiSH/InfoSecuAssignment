@@ -59,7 +59,7 @@ async function run() {
 
   
 
-  /**
+ /**
  * @swagger
  * /registerAdmin:
  *   post:
@@ -102,21 +102,22 @@ async function run() {
  *           text/plain:
  *             schema:
  *               type: string
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
+ *       '400':
+ *         description: Bad Request - Invalid input or password criteria not met
  */
-  
-  
-  // Apply the limiter middleware to the loginAdmin route
-  app.post('/loginAdmin', limiter, async (req, res) => {
-    let data = req.body;
-    try {
-      const result = await loginAdmin(client, data);
-      res.status(200).json(result);
-    } catch (error) {
-      res.status(401).json({ error: error.message });
-    }
-  });
+
+// Allow admin registration without requiring a token
+app.post('/registerAdmin', async (req, res) => {
+  let data = req.body;
+  try {
+    const result = await registerAdmin(client, data);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+
 
   /**
  * @swagger
@@ -1061,15 +1062,8 @@ async function getHostContact(client, passIdentifier) {
 
 run().catch(console.error);
 
-//To generate token
-function generateToken(userProfile){
-  return jwt.sign(
-  userProfile,    //this is an obj
-  'dinpassword',           //password
-  { expiresIn: '2h' });  //expires after 2 hour
-}
 
-//register Admin
+// Register Admin
 async function registerAdmin(client, data) {
   // Check for existing username
   const existingUser = await client.db("assignment").collection("Admin").findOne({ username: data.username });
@@ -1182,6 +1176,13 @@ async function decryptPassword(password, compare) {
 }
 
 
+//To generate token
+function generateToken(userProfile){
+  return jwt.sign(
+  userProfile,    //this is an obj
+  'dinpassword',           //password
+  { expiresIn: '2h' });  //expires after 2 hour
+}
 
 //to verify JWT Token
 function verifyToken(req, res, next) {
