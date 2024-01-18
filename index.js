@@ -12,7 +12,7 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Vistor Management System',
+            title: 'Visitor Management System',
             version: '1.0.0'
         },
         components: {  // Add 'components' section
@@ -107,7 +107,7 @@ async function run() {
  */
 
 // Allow admin registration without requiring a token
-app.post('/registerAdmin', async (req, res) => {
+app.post('/registerAdmin',limiter , async (req, res) => {
   let data = req.body;
   try {
     const result = await registerAdmin(client, data);
